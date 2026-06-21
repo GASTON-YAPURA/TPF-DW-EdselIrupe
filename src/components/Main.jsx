@@ -1,4 +1,4 @@
-++function Main() {
+function Main() {
   return (
     <>
       {/* Hero */}
