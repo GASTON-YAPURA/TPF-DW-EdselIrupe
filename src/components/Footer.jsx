@@ -3,14 +3,14 @@ import { MapPin, Mail, Phone, Camera, Globe } from 'lucide-react'
 function Footer() {
   return (
     <footer className="bg-[#373435] text-[#FEFEFE]">
-      <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-15 py-12 md:py-15">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-25">
 
           {/* Ubicación */}
           <div>
             <h3 className="text-lg font-semibold text-[#C1121F] mb-4">Ubicación</h3>
             <div className="flex items-start gap-2">
-              <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0 text-[#C1121F]" />
+              <MapPin className="w-5 h-5 mt-0.5 shrink-0 text-[#C1121F]" />
               <p className="opacity-80">
                 Copiapó, Eva Perón
                 <br />
