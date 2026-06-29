@@ -15,8 +15,10 @@ const jsonLdLocalBusiness = {
   email: 'info@edsellrupe.com',
   address: {
     '@type': 'PostalAddress',
+    streetAddress: 'Copiapó, Eva Perón',
     addressLocality: 'Tinogasta',
     addressRegion: 'Catamarca',
+    postalCode: 'K5340',
     addressCountry: 'AR',
   },
   sameAs: [
