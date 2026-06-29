@@ -60,7 +60,7 @@ function validarTelefono(tel) {
   return /^[\d\s\+\(\)\-]{7,20}$/.test(tel)
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+const API_URL = import.meta.env.VITE_API_URL || 'https://edsellrupe-api.onrender.com/api'
 
 function Reservar() {
   const [paso, setPaso] = useState(1)
