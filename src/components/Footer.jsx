@@ -1,4 +1,6 @@
-import { MapPin, Mail, Phone, Instagram, Facebook } from 'lucide-react'
+import { MapPin, Mail, Phone } from 'lucide-react'
+import instagramIcon from '../assets/instagram.svg'
+import facebookIcon from '../assets/facebook.svg'
 
 function Footer() {
   return (
@@ -51,7 +53,7 @@ function Footer() {
                 className="bg-[#C1121F] p-2.5 rounded-full hover:bg-[#5A0B15] transition-colors"
                 aria-label="Instagram"
               >
-                <Instagram className="w-5 h-5" />
+                <img src={instagramIcon} alt="Instagram" className="w-5 h-5" />
               </a>
               <a
                 href="https://www.facebook.com/profile.php?id=100064043828944"
@@ -60,7 +62,7 @@ function Footer() {
                 className="bg-[#C1121F] p-2.5 rounded-full hover:bg-[#5A0B15] transition-colors"
                 aria-label="Facebook"
               >
-                <Facebook className="w-5 h-5" />
+                <img src={facebookIcon} alt="Facebook" className="w-5 h-5" />
               </a>
             </div>
             <p className="mt-4 text-sm opacity-60">
