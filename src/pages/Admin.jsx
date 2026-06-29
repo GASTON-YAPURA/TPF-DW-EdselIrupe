@@ -246,7 +246,7 @@ function Admin() {
                         {r.mensaje && <p className="text-xs text-[#373435] opacity-50 mt-0.5">"{r.mensaje}"</p>}
                       </td>
                       <td className="px-4 py-3 text-sm text-[#373435]">{r.servicio}</td>
-                      <td className="px-4 py-3 text-sm text-[#373435]">{r.fecha}</td>
+                      <td className="px-4 py-3 text-sm text-[#373435]">{new Date(r.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
                       <td className="px-4 py-3 text-sm text-[#373435]">{r.horario}</td>
                       <td className="px-4 py-3 text-sm text-[#373435]">
                         <p>{r.email}</p>

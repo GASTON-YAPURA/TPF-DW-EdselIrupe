@@ -114,6 +114,12 @@ function Reservar() {
     return Object.keys(nuevosErrores).length === 0
   }
 
+  function obtenerPrecioNumerico(titulo) {
+    const s = servicios.find(s => s.titulo === titulo)
+    if (!s) return 0
+    return parseInt(s.precio.replace(/[^0-9]/g, ''))
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (!validarPaso(3)) return
@@ -122,7 +128,7 @@ function Reservar() {
       const res = await fetch(`${API_URL}/reservas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, total: obtenerPrecioNumerico(form.servicio) }),
       })
       if (!res.ok) throw new Error('Error al enviar el turno')
       setEnviado(true)

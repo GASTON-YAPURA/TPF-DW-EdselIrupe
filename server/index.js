@@ -122,7 +122,7 @@ app.get('/api/servicios', async (_req, res) => {
 })
 
 app.post('/api/reservas', async (req, res) => {
-  const { servicio, fecha, horario, nombre, email, telefono, mensaje } = req.body
+  const { servicio, fecha, horario, nombre, email, telefono, mensaje, total } = req.body
 
   if (!servicio || !fecha || !horario || !nombre || !email || !telefono) {
     return res.status(400).json({ error: 'Todos los campos obligatorios deben estar completos' })
@@ -130,9 +130,9 @@ app.post('/api/reservas', async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO reservas (servicio, fecha, horario, nombre, email, telefono, mensaje)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-      [servicio, fecha, horario, nombre, email, telefono, mensaje || null]
+      `INSERT INTO reservas (servicio, fecha, horario, nombre, email, telefono, mensaje, total)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+      [servicio, fecha, horario, nombre, email, telefono, mensaje || null, total || 0]
     )
     res.status(201).json({ id: result.rows[0].id, mensaje: 'Turno registrado correctamente' })
   } catch (err) {
