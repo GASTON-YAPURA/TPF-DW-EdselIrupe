@@ -205,6 +205,8 @@ function Home() {
         </div>
       </section>
 
+      <hr className="border-t border-[#373435] border-opacity-20 max-w-4xl mx-auto" />
+
       {/* Sesiones Más Pedidas */}
       <SesionesMasPedidas />
       <ScrollToTop />

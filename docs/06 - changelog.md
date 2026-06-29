@@ -128,3 +128,6 @@ https://tpf-dw-edsel-irupe.vercel.app/
  19. Nueva sección "Sesiones Más Pedidas" en el Home:
           - Sección con 3 cards (Particulares, Infantiles, Eventos)
           - Cada card con imagen y botón Agendar que redirige a /reservar
+
+ 20. Divider entre Filosofía y Sesiones Más Pedidas:
+          - Home.jsx: agrega línea divisoria <hr> entre ambas secciones
