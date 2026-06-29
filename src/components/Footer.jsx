@@ -1,4 +1,4 @@
-import { MapPin, Mail, Phone, Camera, Globe } from 'lucide-react'
+import { MapPin, Mail, Phone, Instagram, Facebook } from 'lucide-react'
 
 function Footer() {
   return (
@@ -45,18 +45,22 @@ function Footer() {
             <h3 className="text-lg font-semibold text-[#C1121F] mb-4">Redes Sociales</h3>
             <div className="flex gap-4">
               <a
-                href="#"
+                href="https://www.instagram.com/edselirupe/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-[#C1121F] p-2.5 rounded-full hover:bg-[#5A0B15] transition-colors"
                 aria-label="Instagram"
               >
-                <Camera className="w-5 h-5" />
+                <Instagram className="w-5 h-5" />
               </a>
               <a
-                href="#"
+                href="https://www.facebook.com/profile.php?id=100064043828944"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-[#C1121F] p-2.5 rounded-full hover:bg-[#5A0B15] transition-colors"
                 aria-label="Facebook"
               >
-                <Globe className="w-5 h-5" />
+                <Facebook className="w-5 h-5" />
               </a>
             </div>
             <p className="mt-4 text-sm opacity-60">
