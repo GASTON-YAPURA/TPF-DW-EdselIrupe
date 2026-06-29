@@ -108,3 +108,8 @@ https://tpf-dw-edsel-irupe.vercel.app/
          - docs/07-ia-aplicada.md (bitácora de IA, Skills/Tool Calling, reflexión crítica)
          - docs/06-changelog.md actualizado
          - README.md actualizado con URL de producción, captura y enlace a docs
+
+ 15. Fix: fecha formateada dd/mm/yyyy y total con precio de sesión:
+         - Admin.jsx: fecha en formato local argentino (dd/mm/yyyy)
+         - Reservar.jsx: envía el precio del servicio como total al backend
+         - server/index.js: guarda el campo total al crear reserva pública
