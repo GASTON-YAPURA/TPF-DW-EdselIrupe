@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import crypto from 'crypto'
 import pkg from 'pg'
 import dotenv from 'dotenv'
 
@@ -28,6 +29,44 @@ app.use(cors({
   },
   methods: ['GET', 'POST'],
 }))
+
+const SECRETO = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex')
+const ADMIN_USER = process.env.ADMIN_USER || 'admin'
+const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123'
+
+function generarToken(username) {
+  const payload = { username, exp: Date.now() + 86400000 }
+  const data = JSON.stringify(payload)
+  const hash = crypto.createHmac('sha256', SECRETO).update(data).digest('hex')
+  return Buffer.from(data + '.' + hash).toString('base64')
+}
+
+function verificarToken(token) {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf8')
+    const [data, hash] = decoded.split('.')
+    const esperado = crypto.createHmac('sha256', SECRETO).update(data).digest('hex')
+    if (hash !== esperado) return null
+    const payload = JSON.parse(data)
+    if (payload.exp < Date.now()) return null
+    return payload
+  } catch {
+    return null
+  }
+}
+
+function authMiddleware(req, res, next) {
+  const header = req.headers.authorization
+  if (!header || !header.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token requerido' })
+  }
+  const payload = verificarToken(header.slice(7))
+  if (!payload) {
+    return res.status(401).json({ error: 'Token inválido o expirado' })
+  }
+  req.usuario = payload.username
+  next()
+}
 
 app.use(express.json())
 
@@ -93,6 +132,30 @@ app.post('/api/reservas', async (req, res) => {
 
 app.get('/api/health', (_req, res) => {
   res.json({ estado: 'ok', timestamp: new Date().toISOString() })
+})
+
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Usuario y contraseña requeridos' })
+  }
+  if (username !== ADMIN_USER || password !== ADMIN_PASS) {
+    return res.status(401).json({ error: 'Credenciales inválidas' })
+  }
+  const token = generarToken(username)
+  res.json({ token })
+})
+
+app.get('/api/reservas', authMiddleware, async (_req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM reservas ORDER BY creada_en DESC'
+    )
+    res.json(result.rows)
+  } catch (err) {
+    console.error('Error al obtener reservas:', err)
+    res.status(500).json({ error: 'Error al obtener reservas' })
+  }
 })
 
 async function iniciar() {
