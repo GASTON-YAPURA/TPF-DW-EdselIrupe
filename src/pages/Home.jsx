@@ -147,7 +147,7 @@ function Home() {
       <section className="px-4 py-16 md:py-24 max-w-6xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold text-[#373435] mb-10 text-center">
           Nuestra{' '}
-         Filosofía: <span className="text-[#C1121F]">¿Quien Somos?</span>
+         Filosofía: <span className="text-[#C1121F]">¿Quienes Somos?</span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
           {/* Texto */}
