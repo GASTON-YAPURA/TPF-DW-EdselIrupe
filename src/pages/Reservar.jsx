@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
 import { CalendarDays, Clock, User, Mail, Phone, MessageSquare, Check, ArrowLeft, ArrowRight } from 'lucide-react'
@@ -63,7 +64,10 @@ function validarTelefono(tel) {
 const API_URL = import.meta.env.VITE_API_URL || 'https://edsellrupe-api.onrender.com/api'
 
 function Reservar() {
-  const [paso, setPaso] = useState(1)
+  const location = useLocation()
+  const servicioInicial = location.state?.servicio || ''
+
+  const [paso, setPaso] = useState(servicioInicial ? 1 : 1)
   const [enviado, setEnviado] = useState(false)
   const [errores, setErrores] = useState({})
   const [cargando, setCargando] = useState(false)
@@ -75,7 +79,7 @@ function Reservar() {
     />
   )
   const [form, setForm] = useState({
-    servicio: '',
+    servicio: servicioInicial,
     fecha: '',
     horario: '',
     nombre: '',

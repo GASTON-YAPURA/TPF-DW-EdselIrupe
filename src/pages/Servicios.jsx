@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
 
@@ -45,6 +46,8 @@ const servicios = [
 ]
 
 function Servicios() {
+  const navigate = useNavigate()
+
   return (
     <>
       <SEO
@@ -88,6 +91,7 @@ function Servicios() {
                 </span>
               </div>
               <button
+                onClick={() => navigate('/reservar', { state: { servicio: s.titulo } })}
                 className="w-full text-center bg-[#C1121F] text-[#FEFEFE] py-2.5 rounded-md font-semibold hover:bg-[#5A0B15] transition-colors cursor-pointer"
               >
                 Agendar
