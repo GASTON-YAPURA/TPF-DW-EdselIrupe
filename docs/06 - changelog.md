@@ -65,11 +65,46 @@ https://tpf-dw-edsel-irupe.vercel.app/
         - Validación de formato email y teléfono
         - Mensajes de error específicos por campo
 
- 7. Conexión frontend-backend:
+ 7. Conexión frontend-backend + CORS:
         - Formulario de Reserva envía datos al backend via fetch
         - Estado de carga y manejo de errores en el envío
         - Variable de entorno VITE_API_URL para la URL del API
+        - Fix: URL de Vercel agregada al CORS del backend
+        - Fix: fallback de API_URL cambiado a Render
+        - Fix: CORS dinámico acepta cualquier subdominio .vercel.app
 
- 8. Documentación:
-        - docs/07-ia-aplicada.md (bitácora de IA, Skills/Tool Calling, reflexión crítica)
-        - docs/06-changelog.md actualizado
+ 8. Panel Administrativo:
+        - Login con autenticación mediante token
+        - KPIs: reservas activas, ingresos registrados, cobro pendiente
+        - Tabla de reservas con estados (pendiente/señado/completado)
+        - Modal de cobro (registrar pagos)
+        - Botón eliminar reserva
+        - Modal "Añadir Turno Manual" para agendar clientes externos
+        - Fix: rewrites en vercel.json para SPA routing (ruta /admin)
+
+ 9. Footer - Redes Sociales y Contacto:
+        - Iconos SVG de Instagram y Facebook con enlaces reales
+        - Email actualizado: irupevilla57@gmail.com (abre Gmail)
+        - Teléfono actualizado: +54 3837 430319 (abre WhatsApp)
+
+ 10. JSON-LD:
+         - Fix: agregar streetAddress y postalCode al bloque LocalBusiness
+         - Validado sin errores en Google Rich Results Test
+
+ 11. Header:
+         - Ajuste de espaciado entre enlaces de navegación
+
+ 12. Servicios:
+         - Botón "Agendar" redirige a Reservar con el servicio preseleccionado
+
+ 13. Core Web Vitals (Lighthouse):
+         - Performance: 98 🟢
+         - Accesibilidad: 90 🟢
+         - Buenas Prácticas: 100 🟢
+         - SEO: 100 🟢
+         - Capturas en src/assets/metricas01.png y metricas02.png
+
+ 14. Documentación:
+         - docs/07-ia-aplicada.md (bitácora de IA, Skills/Tool Calling, reflexión crítica)
+         - docs/06-changelog.md actualizado
+         - README.md actualizado con URL de producción, captura y enlace a docs
