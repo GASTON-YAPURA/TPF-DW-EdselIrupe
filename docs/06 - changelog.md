@@ -118,4 +118,13 @@ https://tpf-dw-edsel-irupe.vercel.app/
          - Reservar.jsx: min-h-screen + flex center en vista de confirmación
 
  17. Fix: corregir "Quien" por "Quienes" en título de Filosofía:
-         - Home.jsx: ¿Quien Somos? → ¿Quienes Somos?
+          - Home.jsx: ¿Quien Somos? → ¿Quienes Somos?
+
+ 18. Imágenes reales en cards de Servicios y slider del Home:
+          - Servicios.jsx: reemplaza colores sólidos por imágenes reales
+          - Home.jsx: reemplaza colores sólidos por imágenes en slider Filosofía
+          - Agrega 5 imágenes: eventos, particulares, temática, infantil, individuales y grupales
+
+ 19. Nueva sección "Sesiones Más Pedidas" en el Home:
+          - Sección con 3 cards (Particulares, Infantiles, Eventos)
+          - Cada card con imagen y botón Agendar que redirige a /reservar

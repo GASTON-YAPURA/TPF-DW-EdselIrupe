@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
@@ -40,6 +40,24 @@ const slides = [
   { imagen: tematica, label: 'Sesiones Temáticas' },
   { imagen: infantil, label: 'Sesiones Infantiles' },
   { imagen: grupales, label: 'Sesiones Individuales y Grupales' },
+]
+
+const masPedidos = [
+  {
+    titulo: 'Sesiones Particulares',
+    descripcion: 'Sesiones personalizadas para individuos o parejas.',
+    imagen: particulares,
+  },
+  {
+    titulo: 'Sesiones Infantiles',
+    descripcion: 'Sesiones para niños, escuelas y jardines de infantes.',
+    imagen: infantil,
+  },
+  {
+    titulo: 'Sesiones de Eventos',
+    descripcion: 'Cobertura completa de fiestas, celebraciones y eventos sociales.',
+    imagen: eventos,
+  },
 ]
 
 function FilosofiaSlider() {
@@ -186,9 +204,53 @@ function Home() {
           <FilosofiaSlider />
         </div>
       </section>
+
+      {/* Sesiones Más Pedidas */}
+      <SesionesMasPedidas />
       <ScrollToTop />
     </div>
     </>
+  )
+}
+
+function SesionesMasPedidas() {
+  const navigate = useNavigate()
+
+  return (
+    <section className="px-4 py-16 md:py-24 max-w-6xl mx-auto">
+      <h2 className="text-3xl md:text-4xl font-bold text-[#373435] mb-10 text-center">
+        Sesiones{' '}
+        <span className="text-[#C1121F]">Más Pedidas</span>
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {masPedidos.map((s) => (
+          <div
+            key={s.titulo}
+            className="rounded-lg overflow-hidden shadow-md bg-[#FEFEFE] border border-[#E5E5E5]"
+          >
+            <img
+              src={s.imagen}
+              alt={s.titulo}
+              className="h-48 w-full object-cover"
+            />
+            <div className="p-5">
+              <h3 className="text-xl font-bold text-[#373435] mb-2">
+                {s.titulo}
+              </h3>
+              <p className="text-[#373435] opacity-70 mb-4">
+                {s.descripcion}
+              </p>
+              <button
+                onClick={() => navigate('/reservar', { state: { servicio: s.titulo } })}
+                className="w-full text-center bg-[#C1121F] text-[#FEFEFE] py-2.5 rounded-md font-semibold hover:bg-[#5A0B15] transition-colors cursor-pointer"
+              >
+                Agendar
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 
