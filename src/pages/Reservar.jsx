@@ -152,8 +152,8 @@ function Reservar() {
     return (
     <>
       {SEOContent}
-    <div className="bg-[#F5F1EC]">
-      <section className="pt-30 pb-20 px-4 max-w-3xl mx-auto">
+    <div className="bg-[#F5F1EC] min-h-screen flex items-center justify-center">
+      <section className="px-4 max-w-3xl w-full">
         <div className="border border-[#E5E5E5] rounded-lg p-8 text-center">
           <div className="text-5xl mb-4">✅</div>
           <h2 className="text-2xl font-bold text-[#373435] mb-2">
