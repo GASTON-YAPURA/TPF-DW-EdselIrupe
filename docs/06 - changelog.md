@@ -113,3 +113,9 @@ https://tpf-dw-edsel-irupe.vercel.app/
          - Admin.jsx: fecha en formato local argentino (dd/mm/yyyy)
          - Reservar.jsx: envía el precio del servicio como total al backend
          - server/index.js: guarda el campo total al crear reserva pública
+
+ 16. Fix: centrar verticalmente mensaje de éxito al solicitar turno:
+         - Reservar.jsx: min-h-screen + flex center en vista de confirmación
+
+ 17. Fix: corregir "Quien" por "Quienes" en título de Filosofía:
+         - Home.jsx: ¿Quien Somos? → ¿Quienes Somos?
