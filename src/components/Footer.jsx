@@ -26,18 +26,22 @@ function Footer() {
             <h3 className="text-lg font-semibold text-[#C1121F] mb-4">Contacto</h3>
             <div className="flex flex-col gap-3">
               <a
-                href="mailto:info@edsellrupe.com"
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=irupevilla57@gmail.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 opacity-80 hover:opacity-100 hover:text-[#C1121F] transition-colors"
               >
                 <Mail className="w-5 h-5" />
-                info@edsellrupe.com
+                irupevilla57@gmail.com
               </a>
               <a
-                href="tel:+549123456789"
+                href="https://wa.me/543837430319"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 opacity-80 hover:opacity-100 hover:text-[#C1121F] transition-colors"
               >
                 <Phone className="w-5 h-5" />
-                +54 9 1234 56-789
+                +54 3837 430319
               </a>
             </div>
           </div>
