@@ -15,11 +15,17 @@ const pool = new Pool({
 })
 
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://tpf-dw-edsel-irupe.vercel.app',
-    'https://tpf-dw-edsel-irupe-git-main-gaston-yapura-s-projects.vercel.app',
-  ],
+  origin: function (origin, callback) {
+    const permitidos = [
+      'http://localhost:5173',
+      'https://tpf-dw-edsel-irupe.vercel.app',
+    ]
+    if (!origin || permitidos.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true)
+    } else {
+      callback(new Error('No autorizado por CORS'))
+    }
+  },
   methods: ['GET', 'POST'],
 }))
 
