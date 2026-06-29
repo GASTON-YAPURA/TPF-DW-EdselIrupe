@@ -18,6 +18,7 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'https://tpf-dw-edsel-irupe.vercel.app',
+    'https://tpf-dw-edsel-irupe-git-main-gaston-yapura-s-projects.vercel.app',
   ],
   methods: ['GET', 'POST'],
 }))
