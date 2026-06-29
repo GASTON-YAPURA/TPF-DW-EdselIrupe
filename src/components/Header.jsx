@@ -30,7 +30,7 @@ function Header() {
           </NavLink>
 
           {/* Nav - Desktop */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-10">
             <NavLink
               to="/"
               className={({ isActive }) =>
@@ -42,7 +42,7 @@ function Header() {
             <NavLink
               to="/servicios"
               className={({ isActive }) =>
-                `font-medium transition-colors px-4 py-3 rounded-md ${isActive ? 'bg-[#C1121F] text-[#FEFEFE]' : 'border border-transparent text-[#FEFEFE] hover:bg-[#C1121F] hover:text-[#FEFEFE]'}`
+                `font-medium transition-colors px-5 py-3 rounded-md ${isActive ? 'bg-[#C1121F] text-[#FEFEFE]' : 'border border-transparent text-[#FEFEFE] hover:bg-[#C1121F] hover:text-[#FEFEFE]'}`
               }
             >
               Servicios
@@ -50,7 +50,7 @@ function Header() {
             <NavLink
               to="/reservar"
               className={({ isActive }) =>
-                `font-medium transition-colors px-4 py-3 rounded-md ${isActive ? 'bg-[#C1121F] text-[#FEFEFE]' : 'border border-transparent text-[#FEFEFE] hover:bg-[#C1121F] hover:text-[#FEFEFE]'}`
+                `font-medium transition-colors px-5 py-3 rounded-md ${isActive ? 'bg-[#C1121F] text-[#FEFEFE]' : 'border border-transparent text-[#FEFEFE] hover:bg-[#C1121F] hover:text-[#FEFEFE]'}`
               }
             >
               Reservar Turno
