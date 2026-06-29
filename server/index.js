@@ -27,7 +27,7 @@ app.use(cors({
       callback(new Error('No autorizado por CORS'))
     }
   },
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }))
 
 const SECRETO = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex')
@@ -91,9 +91,20 @@ async function inicializarDB() {
         email VARCHAR(200) NOT NULL,
         telefono VARCHAR(50) NOT NULL,
         mensaje TEXT,
+        total INTEGER DEFAULT 0,
+        abonado INTEGER DEFAULT 0,
+        estado VARCHAR(20) DEFAULT 'pendiente',
         creada_en TIMESTAMP DEFAULT NOW()
       );
     `)
+
+    await client.query(`
+      ALTER TABLE reservas
+        ADD COLUMN IF NOT EXISTS total INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS abonado INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS estado VARCHAR(20) DEFAULT 'pendiente'
+    `)
+
     console.log('Tablas verificadas/creadas correctamente')
   } finally {
     client.release()
@@ -155,6 +166,92 @@ app.get('/api/reservas', authMiddleware, async (_req, res) => {
   } catch (err) {
     console.error('Error al obtener reservas:', err)
     res.status(500).json({ error: 'Error al obtener reservas' })
+  }
+})
+
+app.get('/api/admin/kpis', authMiddleware, async (_req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        COUNT(*)::int AS reservas_activas,
+        COALESCE(SUM(abonado), 0)::int AS ingresos_registrados,
+        COALESCE(SUM(total - abonado), 0)::int AS cobro_pendiente
+      FROM reservas
+    `)
+    res.json(result.rows[0])
+  } catch (err) {
+    console.error('Error al obtener KPIs:', err)
+    res.status(500).json({ error: 'Error al obtener KPIs' })
+  }
+})
+
+app.put('/api/reservas/:id/cobro', authMiddleware, async (req, res) => {
+  const { id } = req.params
+  const { monto } = req.body
+
+  if (monto == null || monto < 0) {
+    return res.status(400).json({ error: 'Monto inválido' })
+  }
+
+  try {
+    const reserva = await pool.query('SELECT * FROM reservas WHERE id = $1', [id])
+    if (reserva.rows.length === 0) {
+      return res.status(404).json({ error: 'Reserva no encontrada' })
+    }
+
+    const r = reserva.rows[0]
+    const nuevoAbonado = r.abonado + monto
+    let nuevoEstado = r.estado
+    if (nuevoAbonado >= r.total) {
+      nuevoEstado = 'completado'
+    } else if (nuevoAbonado > 0) {
+      nuevoEstado = 'señado'
+    }
+
+    await pool.query(
+      'UPDATE reservas SET abonado = $1, estado = $2 WHERE id = $3',
+      [nuevoAbonado, nuevoEstado, id]
+    )
+
+    const actualizada = await pool.query('SELECT * FROM reservas WHERE id = $1', [id])
+    res.json(actualizada.rows[0])
+  } catch (err) {
+    console.error('Error al registrar cobro:', err)
+    res.status(500).json({ error: 'Error al registrar cobro' })
+  }
+})
+
+app.delete('/api/reservas/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params
+  try {
+    const result = await pool.query('DELETE FROM reservas WHERE id = $1 RETURNING id', [id])
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Reserva no encontrada' })
+    }
+    res.json({ mensaje: 'Reserva eliminada correctamente' })
+  } catch (err) {
+    console.error('Error al eliminar reserva:', err)
+    res.status(500).json({ error: 'Error al eliminar reserva' })
+  }
+})
+
+app.post('/api/reservas/manual', authMiddleware, async (req, res) => {
+  const { servicio, fecha, horario, nombre, email, telefono, mensaje, total } = req.body
+
+  if (!servicio || !fecha || !horario || !nombre || !email || !telefono) {
+    return res.status(400).json({ error: 'Todos los campos obligatorios deben estar completos' })
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO reservas (servicio, fecha, horario, nombre, email, telefono, mensaje, total, estado)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pendiente') RETURNING *`,
+      [servicio, fecha, horario, nombre, email, telefono, mensaje || null, total || 0]
+    )
+    res.status(201).json(result.rows[0])
+  } catch (err) {
+    console.error('Error al crear reserva manual:', err)
+    res.status(500).json({ error: 'Error al crear la reserva' })
   }
 })
 
