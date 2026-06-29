@@ -1,6 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
+import eventos from '../assets/eventos.png'
+import particulares from '../assets/particulares.png'
+import tematica from '../assets/temática.png'
+import infantil from '../assets/infantil.png'
+import grupales from '../assets/individuales y grupales.png'
 
 const servicios = [
   {
@@ -9,7 +14,7 @@ const servicios = [
     descripcion: 'Cobertura completa de fiestas, celebraciones y eventos sociales.',
     duracion: '4 horas',
     precio: '$25.000',
-    color: 'bg-[#5A0B15]',
+    imagen: eventos,
   },
   {
     id: 2,
@@ -17,7 +22,7 @@ const servicios = [
     descripcion: 'Sesiones personalizadas para individuos o parejas.',
     duracion: '2 horas',
     precio: '$15.000',
-    color: 'bg-[#373435]',
+    imagen: particulares,
   },
   {
     id: 3,
@@ -25,7 +30,7 @@ const servicios = [
     descripcion: 'Sesiones con escenografía y vestuario acorde a la temática elegida.',
     duracion: '3 horas',
     precio: '$20.000',
-    color: 'bg-[#C1121F]',
+    imagen: tematica,
   },
   {
     id: 4,
@@ -33,7 +38,7 @@ const servicios = [
     descripcion: 'Sesiones para niños, escuelas y jardines de infantes.',
     duracion: '2 horas',
     precio: '$18.000',
-    color: 'bg-[#5A0B15]',
+    imagen: infantil,
   },
   {
     id: 5,
@@ -41,7 +46,7 @@ const servicios = [
     descripcion: 'Sesiones para fotografía individual o grupal.',
     duracion: '2 horas',
     precio: '$12.000',
-    color: 'bg-[#373435]',
+    imagen: grupales,
   },
 ]
 
@@ -70,11 +75,11 @@ function Servicios() {
             key={s.id}
             className="rounded-lg overflow-hidden shadow-md bg-[#FEFEFE] border border-[#E5E5E5]"
           >
-            <div className={`h-48 ${s.color} flex items-center justify-center`}>
-              <span className="text-[#FEFEFE] text-lg font-semibold opacity-60">
-                {s.titulo}
-              </span>
-            </div>
+            <img
+              src={s.imagen}
+              alt={s.titulo}
+              className="h-48 w-full object-cover"
+            />
             <div className="p-5">
               <h3 className="text-xl font-bold text-[#373435] mb-2">
                 {s.titulo}

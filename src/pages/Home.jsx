@@ -4,6 +4,11 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
 import fondoMain from '../assets/fondo main.png'
+import eventos from '../assets/eventos.png'
+import particulares from '../assets/particulares.png'
+import tematica from '../assets/temática.png'
+import infantil from '../assets/infantil.png'
+import grupales from '../assets/individuales y grupales.png'
 
 const jsonLdLocalBusiness = {
   '@context': 'https://schema.org',
@@ -30,11 +35,11 @@ const jsonLdLocalBusiness = {
 }
 
 const slides = [
-  { color: 'bg-[#373435]', label: 'Sesiones de Eventos' },
-  { color: 'bg-[#C1121F]', label: 'Sesiones Particulares' },
-  { color: 'bg-[#5A0B15]', label: 'Sesiones Temáticas' },
-  { color: 'bg-[#373435]', label: 'Sesiones Infantiles' },
-  { color: 'bg-[#C1121F]', label: 'Sesiones Individuales y Grupales' },
+  { imagen: eventos, label: 'Sesiones de Eventos' },
+  { imagen: particulares, label: 'Sesiones Particulares' },
+  { imagen: tematica, label: 'Sesiones Temáticas' },
+  { imagen: infantil, label: 'Sesiones Infantiles' },
+  { imagen: grupales, label: 'Sesiones Individuales y Grupales' },
 ]
 
 function FilosofiaSlider() {
@@ -58,11 +63,17 @@ function FilosofiaSlider() {
       {slides.map((slide, i) => (
         <div
           key={i}
-          className={`absolute inset-0 ${slide.color} flex items-center justify-center transition-opacity duration-500 ${
+          className={`absolute inset-0 transition-opacity duration-500 ${
             i === actual ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          <span className="text-[#FEFEFE] text-2xl font-semibold text-center px-4">
+          <img
+            src={slide.imagen}
+            alt={slide.label}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/40" />
+          <span className="absolute inset-0 flex items-center justify-center text-[#FEFEFE] text-2xl font-semibold text-center px-4">
             {slide.label}
           </span>
         </div>
