@@ -1,8 +1,31 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
 import fondoMain from '../assets/fondo main.png'
+
+const jsonLdLocalBusiness = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: 'Edsellrupe - Fotografía',
+  description: 'Estudio fotográfico profesional en Tinogasta, Catamarca. Sesiones de eventos, particulares, temáticas, infantiles, individuales y grupales.',
+  url: 'https://tpf-dw-edsel-irupe.vercel.app',
+  telephone: '+54 9 1234 56-789',
+  email: 'info@edsellrupe.com',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Tinogasta',
+    addressRegion: 'Catamarca',
+    addressCountry: 'AR',
+  },
+  sameAs: [
+    'https://instagram.com/edsellrupe',
+    'https://facebook.com/edsellrupe',
+  ],
+  priceRange: '$$',
+  image: 'https://tpf-dw-edsel-irupe.vercel.app/icono.png',
+}
 
 const slides = [
   { color: 'bg-[#373435]', label: 'Sesiones de Eventos' },
@@ -78,6 +101,12 @@ function FilosofiaSlider() {
 
 function Home() {
   return (
+    <>
+      <SEO
+        title="Inicio"
+        description="Edsellrupe - Fotografía profesional en Tinogasta, Catamarca. Sesiones de eventos, particulares, temáticas, infantiles y grupales."
+        jsonLd={jsonLdLocalBusiness}
+      />
     <div className="bg-[#F5F1EC]">
       {/* Hero */}
       <section
@@ -146,6 +175,7 @@ function Home() {
       </section>
       <ScrollToTop />
     </div>
+    </>
   )
 }
 

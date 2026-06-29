@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tpf-dw-edsel-irupe.vercel.app/sitemap.xml

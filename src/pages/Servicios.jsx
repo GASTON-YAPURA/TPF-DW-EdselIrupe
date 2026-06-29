@@ -1,3 +1,4 @@
+import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
 
 const servicios = [
@@ -45,6 +46,11 @@ const servicios = [
 
 function Servicios() {
   return (
+    <>
+      <SEO
+        title="Servicios"
+        description="Conocé todos los servicios fotográficos de Edsellrupe: sesiones de eventos, particulares, temáticas, infantiles y grupales en Tinogasta, Catamarca."
+      />
     <div className="bg-[#F5F1EC]">
       <section className="pt-30 pb-20 px-4 max-w-6xl mx-auto">
       <h1 className="text-3xl md:text-5xl font-bold text-[#373435] mb-4">
@@ -94,6 +100,7 @@ function Servicios() {
 
       <ScrollToTop />
     </div>
+    </>
   )
 }
 

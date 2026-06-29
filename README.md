@@ -1,6 +1,26 @@
 
 # ⚙️ TRABAJO PRACTICO FINAL: - DESARROLLO WEB
 
+## 🌐 Sitio en producción
+
+**URL:** [https://tpf-dw-edsel-irupe.vercel.app/](https://tpf-dw-edsel-irupe.vercel.app/)
+
+![Captura del sitio](./src/assets/icono.png)
+
+## 📁 Documentación
+
+Toda la documentación del proyecto se encuentra en la carpeta [`/docs`](./docs/):
+
+- [01 - Planificación](./docs/01%20-%20planificaci%C3%B3n.md)
+- [02 - Arquitectura de la Información](./docs/02%20-%20arquitectura%20-%20info.md)
+- [03 - Wireframes](./docs/03%20-%20wireframes.md)
+- [04 - Stack Tecnológico](./docs/04%20-%20stack%20tecnol%C3%B3gico.md)
+- [05 - Escalabilidad](./docs/05%20-%20escalabilidad.md)
+- [06 - Changelog](./docs/06%20-%20changelog.md)
+- [07 - IA Aplicada](./docs/07-ia-aplicada.md)
+
+---
+
 ## 📚 Descripción del Emprendimiento.
 Edsellrupe es un proyecto fotográfico que nace desde lo más íntimo: el deseo de preservar instantes únicos y significativos. Iniciamos como una pareja apasionada por la fotografía, descubriendo que podíamos transformar ese hobby en algo hermoso, auténtico y profesional. Lo que comenzó como una inquietud artística hoy se ha convertido en una propuesta con identidad propia, donde cada toma busca dejar huella.
 

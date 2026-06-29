@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
 import { CalendarDays, Clock, User, Mail, Phone, MessageSquare, Check, ArrowLeft, ArrowRight } from 'lucide-react'
 
@@ -46,9 +47,33 @@ const pasos = [
   { numero: 3, label: 'Tus Datos' },
 ]
 
+function sanitizar(texto) {
+  const mapa = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;' }
+  return String(texto).replace(/[&<>"']/g, (c) => mapa[c])
+}
+
+function validarEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function validarTelefono(tel) {
+  return /^[\d\s\+\(\)\-]{7,20}$/.test(tel)
+}
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+
 function Reservar() {
   const [paso, setPaso] = useState(1)
   const [enviado, setEnviado] = useState(false)
+  const [errores, setErrores] = useState({})
+  const [cargando, setCargando] = useState(false)
+
+  const SEOContent = (
+    <SEO
+      title="Reservar Turno"
+      description="Reservá tu sesión fotográfica con Edsellrupe. Completá el formulario multi-paso y te contactaremos para confirmar tu turno en Tinogasta, Catamarca."
+    />
+  )
   const [form, setForm] = useState({
     servicio: '',
     fecha: '',
@@ -60,15 +85,52 @@ function Reservar() {
   })
 
   function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const valor = e.target.name === 'mensaje' ? e.target.value : sanitizar(e.target.value)
+    setForm({ ...form, [e.target.name]: valor })
+    setErrores({ ...errores, [e.target.name]: '' })
   }
 
-  function handleSubmit(e) {
+  function validarPaso(numero) {
+    const nuevosErrores = {}
+    if (numero === 1 && !form.servicio) {
+      nuevosErrores.servicio = 'Seleccioná un servicio'
+    }
+    if (numero === 2) {
+      if (!form.fecha) nuevosErrores.fecha = 'Elegí una fecha'
+      if (!form.horario) nuevosErrores.horario = 'Elegí un horario'
+    }
+    if (numero === 3) {
+      if (!form.nombre) nuevosErrores.nombre = 'El nombre es obligatorio'
+      if (!form.email) nuevosErrores.email = 'El email es obligatorio'
+      else if (!validarEmail(form.email)) nuevosErrores.email = 'Email inválido'
+      if (!form.telefono) nuevosErrores.telefono = 'El teléfono es obligatorio'
+      else if (!validarTelefono(form.telefono)) nuevosErrores.telefono = 'Teléfono inválido (solo números, +, -)'
+    }
+    setErrores(nuevosErrores)
+    return Object.keys(nuevosErrores).length === 0
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault()
-    setEnviado(true)
+    if (!validarPaso(3)) return
+    setCargando(true)
+    try {
+      const res = await fetch(`${API_URL}/reservas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) throw new Error('Error al enviar el turno')
+      setEnviado(true)
+    } catch {
+      setErrores({ general: 'Error al enviar el turno. Intentalo de nuevo.' })
+    } finally {
+      setCargando(false)
+    }
   }
 
   function avanzar() {
+    if (!validarPaso(paso)) return
     setPaso(paso + 1)
   }
 
@@ -78,6 +140,8 @@ function Reservar() {
 
   if (enviado) {
     return (
+    <>
+      {SEOContent}
     <div className="bg-[#F5F1EC]">
       <section className="pt-30 pb-20 px-4 max-w-3xl mx-auto">
         <div className="border border-[#E5E5E5] rounded-lg p-8 text-center">
@@ -92,10 +156,13 @@ function Reservar() {
       </section>
       <ScrollToTop />
     </div>
+    </>
     )
   }
 
   return (
+    <>
+      {SEOContent}
     <div className="bg-[#F5F1EC]">
     <section className="pt-30 pb-20 px-4 max-w-3xl mx-auto">
       <h1 className="text-3xl md:text-5xl font-bold text-[#373435] mb-4">
@@ -166,6 +233,9 @@ function Reservar() {
                 </label>
               ))}
             </div>
+            {errores.servicio && (
+              <p className="text-[#C1121F] text-sm mt-2">{errores.servicio}</p>
+            )}
           </div>
         )}
 
@@ -188,6 +258,9 @@ function Reservar() {
                 required
                 className="w-full border border-[#E5E5E5] rounded-md px-4 py-3 text-[#373435] bg-[#FEFEFE] focus:outline-none focus:ring-2 focus:ring-[#C1121F]"
               />
+              {errores.fecha && (
+                <p className="text-[#C1121F] text-sm mt-1">{errores.fecha}</p>
+              )}
             </div>
             <div>
               <label className="flex items-center gap-2 text-[#373435] font-semibold mb-2">
@@ -202,6 +275,9 @@ function Reservar() {
                 required
                 className="w-full border border-[#E5E5E5] rounded-md px-4 py-3 text-[#373435] bg-[#FEFEFE] focus:outline-none focus:ring-2 focus:ring-[#C1121F]"
               />
+              {errores.horario && (
+                <p className="text-[#C1121F] text-sm mt-1">{errores.horario}</p>
+              )}
             </div>
           </div>
         )}
@@ -226,6 +302,9 @@ function Reservar() {
                 placeholder="Ej: Juan Pérez"
                 className="w-full border border-[#E5E5E5] rounded-md px-4 py-3 text-[#373435] bg-[#FEFEFE] focus:outline-none focus:ring-2 focus:ring-[#C1121F]"
               />
+              {errores.nombre && (
+                <p className="text-[#C1121F] text-sm mt-1">{errores.nombre}</p>
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -242,6 +321,9 @@ function Reservar() {
                   placeholder="correo@ejemplo.com"
                   className="w-full border border-[#E5E5E5] rounded-md px-4 py-3 text-[#373435] bg-[#FEFEFE] focus:outline-none focus:ring-2 focus:ring-[#C1121F]"
                 />
+                {errores.email && (
+                  <p className="text-[#C1121F] text-sm mt-1">{errores.email}</p>
+                )}
               </div>
               <div>
                 <label className="flex items-center gap-2 text-[#373435] font-semibold mb-2">
@@ -257,6 +339,9 @@ function Reservar() {
                   placeholder="+54 9 1234 56-789"
                   className="w-full border border-[#E5E5E5] rounded-md px-4 py-3 text-[#373435] bg-[#FEFEFE] focus:outline-none focus:ring-2 focus:ring-[#C1121F]"
                 />
+                {errores.telefono && (
+                  <p className="text-[#C1121F] text-sm mt-1">{errores.telefono}</p>
+                )}
               </div>
             </div>
             <div>
@@ -300,18 +385,25 @@ function Reservar() {
               <ArrowRight size={18} />
             </button>
           ) : (
-            <button
-              type="submit"
-              className="bg-[#C1121F] text-[#FEFEFE] px-8 py-2.5 rounded-md font-semibold text-base hover:bg-[#5A0B15] transition-colors cursor-pointer"
-            >
-              Solicitar Turno
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              {errores.general && (
+                <p className="text-[#C1121F] text-sm">{errores.general}</p>
+              )}
+              <button
+                type="submit"
+                disabled={cargando}
+                className="bg-[#C1121F] text-[#FEFEFE] px-8 py-2.5 rounded-md font-semibold text-base hover:bg-[#5A0B15] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {cargando ? 'Enviando...' : 'Solicitar Turno'}
+              </button>
+            </div>
           )}
         </div>
       </form>
     </section>
       <ScrollToTop />
     </div>
+    </>
   )
 }
 
