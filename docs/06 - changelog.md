@@ -131,3 +131,7 @@ https://tpf-dw-edsel-irupe.vercel.app/
 
  20. Divider entre Filosofía y Sesiones Más Pedidas:
           - Home.jsx: agrega línea divisoria <hr> entre ambas secciones
+
+ 21. Página 404:
+          - Crea NotFound.jsx con mensaje amigable y botón Volver al Inicio
+          - App.jsx: agrega ruta catch-all con <Route path="*" />

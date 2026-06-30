@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import Servicios from './pages/Servicios'
 import Reservar from './pages/Reservar'
 import Admin from './pages/Admin'
+import NotFound from './pages/NotFound'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
             <Route path="/servicios" element={<Servicios />} />
             <Route path="/reservar" element={<Reservar />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         <Footer />
