@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
-import { LogIn, LogOut, Lock, Plus, Trash2, DollarSign, CalendarDays, Clock, User, Mail, Phone, MessageSquare, BarChart3, TrendingUp, AlertCircle, X } from 'lucide-react'
+import { LogIn, LogOut, Lock, Plus, Trash2, DollarSign, CalendarDays, Clock, User, Mail, Phone, MessageSquare, BarChart3, TrendingUp, AlertCircle, X, Loader2 } from 'lucide-react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://edsellrupe-api.onrender.com/api'
 
@@ -21,6 +21,7 @@ function Admin() {
   const [reservas, setReservas] = useState([])
   const [kpis, setKpis] = useState({ reservas_activas: 0, ingresos_registrados: 0, cobro_pendiente: 0 })
   const [cargando, setCargando] = useState(false)
+  const [cargandoDatos, setCargandoDatos] = useState(false)
   const [modalCobro, setModalCobro] = useState(null)
   const [montoCobro, setMontoCobro] = useState('')
   const [modalManual, setModalManual] = useState(false)
@@ -36,6 +37,7 @@ function Admin() {
   }, [])
 
   async function cargarDatos(token) {
+    setCargandoDatos(true)
     try {
       const [resReservas, resKpis] = await Promise.all([
         fetch(`${API_URL}/reservas`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -45,6 +47,8 @@ function Admin() {
       if (resKpis.ok) setKpis(await resKpis.json())
     } catch {
       setError('Error al cargar datos')
+    } finally {
+      setCargandoDatos(false)
     }
   }
 
@@ -218,7 +222,11 @@ function Admin() {
           </div>
 
           {/* Tabla */}
-          {reservas.length === 0 ? (
+          {cargandoDatos ? (
+            <div className="flex items-center justify-center py-20 bg-[#FEFEFE] rounded-lg">
+              <Loader2 size={32} className="text-[#C1121F] animate-spin" />
+            </div>
+          ) : reservas.length === 0 ? (
             <div className="text-center py-20 bg-[#FEFEFE] rounded-lg">
               <p className="text-xl text-[#373435] opacity-60">No hay reservas registradas</p>
             </div>

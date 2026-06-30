@@ -135,3 +135,8 @@ https://tpf-dw-edsel-irupe.vercel.app/
  21. Página 404:
           - Crea NotFound.jsx con mensaje amigable y botón Volver al Inicio
           - App.jsx: agrega ruta catch-all con <Route path="*" />
+
+ 22. Limpieza y mejoras finales:
+          - Elimina componente Main.jsx (código huérfano sin uso)
+          - Admin.jsx: agrega spinner (Loader2) mientras se cargan datos
+          - README.md: agrega instrucciones de instalación, variables de entorno y API endpoints

@@ -140,3 +140,81 @@ Una SPA (Single Page Application) es una aplicación que carga una única págin
 
 Por otra parte, una PWA (Progressive Web App) combina las ventajas de una página web con características propias de las aplicaciones móviles. Esto permite que la aplicación pueda instalarse en teléfonos celulares, funcionar con un rendimiento optimizado e incluso mantener algunas funcionalidades cuando la conexión a Internet es limitada.
 
+---
+
+## 🚀 Instalación y Ejecución Local
+
+### Frontend
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/GASTON-YAPURA/TPF-DW-EdselIrupe.git
+cd TPF-DW-EdselIrupe
+
+# 2. Instalar dependencias
+npm install
+
+# 3. Crear archivo .env.local con la URL del backend
+echo VITE_API_URL=http://localhost:3001/api > .env.local
+
+# 4. Iniciar en modo desarrollo
+npm run dev
+```
+
+### Backend
+
+```bash
+# 1. Ir a la carpeta del servidor
+cd server
+
+# 2. Instalar dependencias
+npm install
+
+# 3. Crear archivo .env con la configuración
+# (editar DATABASE_URL con tu conexión a PostgreSQL)
+cat > .env << EOF
+DATABASE_URL=postgresql://usuario:password@host:5432/edsellrupe
+PORT=3001
+ADMIN_USER=admin
+ADMIN_PASS=admin123
+JWT_SECRET=clave_secreta_segura
+EOF
+
+# 4. Iniciar el servidor
+npm run dev
+```
+
+### Build para producción
+
+```bash
+# Frontend
+npm run build
+
+# El resultado se genera en la carpeta dist/
+```
+
+### Variables de Entorno
+
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `VITE_API_URL` | URL del backend (frontend) | `http://localhost:3001/api` |
+| `DATABASE_URL` | Conexión a PostgreSQL (backend) | `postgresql://user:pass@host:5432/db` |
+| `PORT` | Puerto del servidor (backend) | `3001` |
+| `ADMIN_USER` | Usuario del panel admin | `admin` |
+| `ADMIN_PASS` | Contraseña del panel admin | `admin123` |
+| `JWT_SECRET` | Secreto para tokens de autenticación | `clave_secreta_segura` |
+
+## 📡 API Endpoints
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| `GET` | `/api/health` | No | Verificar estado del servidor |
+| `GET` | `/api/servicios` | No | Listar servicios disponibles |
+| `POST` | `/api/reservas` | No | Crear reserva pública |
+| `POST` | `/api/auth/login` | No | Iniciar sesión admin |
+| `GET` | `/api/reservas` | Bearer | Listar todas las reservas |
+| `GET` | `/api/admin/kpis` | Bearer | Obtener indicadores (KPIs) |
+| `PUT` | `/api/reservas/:id/cobro` | Bearer | Registrar cobro |
+| `DELETE` | `/api/reservas/:id` | Bearer | Eliminar reserva |
+| `POST` | `/api/reservas/manual` | Bearer | Crear reserva manual |
+
