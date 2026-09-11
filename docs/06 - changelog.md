@@ -228,3 +228,14 @@ https://tpf-dw-edsel-irupe.vercel.app/
  41. Documentación:
          - docs/08: reestructurado en MEJORAS EN EL BACKEND y MEJORAS EN EL FRONTEND
          - README.md: link a docs/08 actualizado
+
+## COMMIT E6: FIX DEPLOY EN RENDER (API)
+ 42. Diagnóstico:
+         - El servidor exige JWT_SECRET, ADMIN_USER y ADMIN_PASS (process.exit(1) si faltan)
+         - Si Render no tiene esas variables configuradas, el proceso muere al arrancar -> Deploy failed
+
+ 43. Solución:
+         - render.yaml (raíz): blueprint con rootDir: server, build npm install,
+           start npm start, healthCheckPath /api/servicios y las 4 variables
+           (DATABASE_URL, JWT_SECRET, ADMIN_USER, ADMIN_PASS) con sync: false
+         - docs/08: nueva sección "Deploy de la API en Render" con pasos del Dashboard

@@ -1,0 +1,23 @@
+# Blueprint de Render para el backend (API edsellrupe)
+# Uso: en Render -> New -> Blueprint, o manualmente con estos mismos valores.
+services:
+  - type: web
+    name: edsellrupe-api
+    runtime: node
+    rootDir: server
+    plan: free
+    healthCheckPath: /api/servicios
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      # sync: false -> el valor se setea en el Dashboard, no en el repo
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false

@@ -214,6 +214,39 @@ app.use(helmet())
 
 ---
 
+## 🚀 Deploy de la API en Render (importante)
+
+### Problemática
+Al subir el backend **con las variables obligatorias** (`JWT_SECRET`, `ADMIN_USER`, `ADMIN_PASS`), si Render no las tenía configuradas el servidor moría en el arranque (`process.exit(1)`) → **Deploy failed**.
+
+### Solución (Dashboard de Render)
+
+En **dashboard.render.com → tu Web Service** configurar:
+
+1. **Root Directory** → `server` (para que Render use el `package.json` del backend y no el del frontend).
+2. **Build Command** → `npm install`
+3. **Start Command** → `npm start` (equivale a `node index.js`)
+4. **Environment** → agregar estas 4 variables y guardar:
+
+| Variable | Ejemplo |
+| :--- | :--- |
+| `DATABASE_URL` | `postgresql://usuario:password@host:5432/edsellrupe` |
+| `JWT_SECRET` | clave de 96 caracteres: `ff441c83...` (generada con `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`) |
+| `ADMIN_USER` | `admin` (o el usuario que quieras) |
+| `ADMIN_PASS` | una contraseña segura |
+
+5. **Deploy** → **Deploy latest commit**.
+
+> ⚠️ **Ojo:** al cambiar `ADMIN_PASS` después, los tokens viejos siguen válidos 1 día (el token firma solo el `username`). Si querés invalidar sesiones, cambiá también `JWT_SECRET`.
+
+### Alternativa reproducible: `render.yaml`
+
+Dejé un **blueprint** en la raíz del repo (`render.yaml`). Crea la API con los 4 valores de arriba, `rootDir: server`, build `npm install`, start `npm start` y `healthCheckPath: /api/servicios`. Las variables secretas quedan `sync: false`, o sea se completan en el Dashboard.
+
+> 🎤 **Argumento para la mesa:** "El 'fail fast' es intencional: el servidor prefiere no arrancar a funcionar con un secreto vacío o credenciales por defecto. La configuración queda documentada en `render.yaml`, lista para reproducir el deploy."
+
+---
+
 # 🎨 MEJORAS EN EL FRONTEND
 
 ## 📋 Resumen
