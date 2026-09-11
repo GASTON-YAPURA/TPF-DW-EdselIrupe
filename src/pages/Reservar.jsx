@@ -58,7 +58,7 @@ function validarEmail(email) {
 }
 
 function validarTelefono(tel) {
-  return /^[\d\s\+\(\)\-]{7,20}$/.test(tel)
+  return /^[\d\s+()-]{7,20}$/.test(tel)
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://edsellrupe-api.onrender.com/api'
@@ -114,10 +114,12 @@ function Reservar() {
     return Object.keys(nuevosErrores).length === 0
   }
 
-  function obtenerPrecioNumerico(titulo) {
-    const s = servicios.find(s => s.titulo === titulo)
-    if (!s) return 0
-    return parseInt(s.precio.replace(/[^0-9]/g, ''))
+  function hoyLocal() {
+    const hoy = new Date()
+    const anio = hoy.getFullYear()
+    const mes = String(hoy.getMonth() + 1).padStart(2, '0')
+    const dia = String(hoy.getDate()).padStart(2, '0')
+    return `${anio}-${mes}-${dia}`
   }
 
   async function handleSubmit(e) {
@@ -128,7 +130,7 @@ function Reservar() {
       const res = await fetch(`${API_URL}/reservas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, total: obtenerPrecioNumerico(form.servicio) }),
+        body: JSON.stringify(form),
       })
       if (!res.ok) throw new Error('Error al enviar el turno')
       setEnviado(true)
@@ -265,6 +267,7 @@ function Reservar() {
                 name="fecha"
                 value={form.fecha}
                 onChange={handleChange}
+                min={hoyLocal()}
                 required
                 className="w-full border border-[#E5E5E5] rounded-md px-4 py-3 text-[#373435] bg-[#FEFEFE] focus:outline-none focus:ring-2 focus:ring-[#C1121F]"
               />

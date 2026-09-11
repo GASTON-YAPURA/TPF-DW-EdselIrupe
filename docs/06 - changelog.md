@@ -136,7 +136,95 @@ https://tpf-dw-edsel-irupe.vercel.app/
           - Crea NotFound.jsx con mensaje amigable y botón Volver al Inicio
           - App.jsx: agrega ruta catch-all con <Route path="*" />
 
- 22. Limpieza y mejoras finales:
-          - Elimina componente Main.jsx (código huérfano sin uso)
-          - Admin.jsx: agrega spinner (Loader2) mientras se cargan datos
-          - README.md: agrega instrucciones de instalación, variables de entorno y API endpoints
+22. Limpieza y mejoras finales:
+         - Elimina componente Main.jsx (código sin uso)
+         - Admin.jsx: agrega spinner (Loader2) mientras se cargan datos
+         - README.md: agrega instrucciones de instalación, variables de entorno y API endpoints
+
+## COMMIT E4: MEJORAS DE SEGURIDAD
+ 23. Autenticación JWT con librería estándar:
+         - server/index.js: reemplaza token custom (base64 + HMAC) por jsonwebtoken
+         - Firmado con expiresIn '1d' y verificación con jwt.verify (firma + expiración)
+         - server/package.json: nueva dependencia jsonwebtoken
+
+ 24. Variables de entorno obligatorias:
+         - server/index.js: ya no existen valores por defecto (admin/admin123)
+         - Si faltan ADMIN_USER, ADMIN_PASS o JWT_SECRET el servidor no arranca (process.exit)
+         - server/.env.example: plantilla de configuración (nuevo)
+
+ 25. Rate limiting en el login:
+         - server/index.js: express-rate-limit con 5 intentos cada 15 minutos
+         - Respuesta 429 al exceder el límite (previene fuerza bruta)
+
+ 26. Precio total calculado solo en el backend:
+         - Reservar.jsx: deja de enviar el total (ya no viaja desde el cliente)
+         - Admin.jsx: elimina campo "Monto Total" del turno manual
+         - server/index.js: totalSeDeServicio() obtiene el precio desde la tabla servicios
+         - Seed automático del catálogo con ON CONFLICT (titulo) DO NOTHING
+
+ 27. Validación server-side de fecha/horario/campos:
+         - server/index.js: funciones validarCampos, validarFecha y validarHorario
+         - Reservar.jsx: input date con min=hoy (no permite fechas pasadas)
+         - Se rechazan fechas anteriores a hoy, emails/teléfonos inválidos y longitudes excesivas
+
+ 28. CORS estricto:
+         - server/index.js: lista blanca exacta (localhost:5173 y dominio de producción)
+         - Elimina aceptación de cualquier subdominio .vercel.app
+
+ 29. Cabeceras de seguridad:
+         - server/index.js: middleware helmet() en la API
+         - vercel.json: Content-Security-Policy, X-XSS-Protection y Permissions-Policy
+
+ 30. Lint y configuración:
+         - eslint.config.js: agrega globals de Node para server/**/*.js
+         - Corrige imports sin uso en Admin.jsx y escape innecesario en regex
+         - Admin.jsx: refactor token a estado (setToken) eliminando setState en effect
+
+ 31. Documentación:
+         - docs/08 - mejoras de seguridad.md: explicación paso a paso para la mesa final
+
+## COMMIT E5: MEJORAS EN EL FRONTEND (SEO + UX + PWA)
+ 32. SEO - Canonical dinámico:
+         - SEO.jsx: canonical derivado de useLocation() (antes apuntaba a la raíz)
+         - Soporte para múltiples bloques JSON-LD y prop noindex
+
+ 33. SEO - Datos estructurados:
+         - Home.jsx: tipo Photographer (en vez de LocalBusiness) + tel/email reales
+         - Nuevo bloque JSON-LD FAQPage generado desde faqData.js
+
+ 34. SEO - Meta tags y archivos:
+         - SEO.jsx: Twitter Cards, og:locale es_AR, dimensiones og:image
+         - Admin.jsx y NotFound.jsx: noindex, nofollow
+         - index.html: favicon, theme-color, manifest, metas iOS
+         - robots.txt: Disallow /admin
+         - sitemap.xml: lastmod
+
+ 35. Botón flotante de WhatsApp:
+         - WhatsAppButton.jsx: fijo abajo a la izquierda, wa.me con mensaje precargado
+         - App.jsx: montado globalmente
+
+ 36. Galería con lightbox:
+         - Galeria.jsx: grilla responsive + visor con navegación por teclado
+         - Navegación prev/next, Escape para cerrar, bloqueo de scroll
+
+ 37. Testimonios y FAQ:
+         - Testimonios.jsx: reseñas con estrellas
+         - Faq.jsx + faqData.js: acordeón accesible alimentando el JSON-LD FAQPage
+
+ 38. Mapa de ubicación:
+         - Footer.jsx: iframe de Google Maps embebido (lazy)
+
+ 39. Animaciones de scroll:
+         - Reveal.jsx: IntersectionObserver + prefers-reduced-motion
+         - Aplicado en Home (filosofía, más pedidas, galería, testimonios, FAQ) y Servicios
+
+ 40. PWA:
+         - public/manifest.webmanifest + iconos 192/512 generados en public/icons/
+         - public/sw.js: service worker network-first con fallback a caché
+         - main.jsx: registro del SW solo en producción (import.meta.env.PROD)
+         - vercel.json: worker-src 'self' en la CSP
+         - index.html: apple-mobile-web-app metas
+
+ 41. Documentación:
+         - docs/08: reestructurado en MEJORAS EN EL BACKEND y MEJORAS EN EL FRONTEND
+         - README.md: link a docs/08 actualizado

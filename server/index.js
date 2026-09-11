@@ -1,6 +1,8 @@
 import express from 'express'
 import cors from 'cors'
-import crypto from 'crypto'
+import helmet from 'helmet'
+import jwt from 'jsonwebtoken'
+import rateLimit from 'express-rate-limit'
 import pkg from 'pg'
 import dotenv from 'dotenv'
 
@@ -15,40 +17,45 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 })
 
+// Variables de entorno obligatorias: sin ellas el servidor no arranca.
+const SECRETO = process.env.JWT_SECRET
+const ADMIN_USER = process.env.ADMIN_USER
+const ADMIN_PASS = process.env.ADMIN_PASS
+
+if (!SECRETO || !ADMIN_USER || !ADMIN_PASS) {
+  console.error(
+    'Faltan variables de entorno obligatorias. Creá un archivo server/.env con: ' +
+    'DATABASE_URL, JWT_SECRET, ADMIN_USER y ADMIN_PASS (ver server/.env.example).'
+  )
+  process.exit(1)
+}
+
+app.use(helmet())
+
 app.use(cors({
-  origin: function (origin, callback) {
-    const permitidos = [
-      'http://localhost:5173',
-      'https://tpf-dw-edsel-irupe.vercel.app',
-    ]
-    if (!origin || permitidos.includes(origin) || origin.endsWith('.vercel.app')) {
-      callback(null, true)
-    } else {
-      callback(new Error('No autorizado por CORS'))
-    }
-  },
+  origin: [
+    'http://localhost:5173',
+    'https://tpf-dw-edsel-irupe.vercel.app',
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }))
 
-const SECRETO = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex')
-const ADMIN_USER = process.env.ADMIN_USER || 'admin'
-const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123'
+// Límite de intentos de login para prevenir fuerza bruta (5 intentos cada 15 min).
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de inicio de sesión. Intentalo en 15 minutos.' },
+})
 
 function generarToken(username) {
-  const payload = { username, exp: Date.now() + 86400000 }
-  const data = JSON.stringify(payload)
-  const hash = crypto.createHmac('sha256', SECRETO).update(data).digest('hex')
-  return Buffer.from(data + '.' + hash).toString('base64')
+  return jwt.sign({ username }, SECRETO, { expiresIn: '1d' })
 }
 
 function verificarToken(token) {
   try {
-    const decoded = Buffer.from(token, 'base64').toString('utf8')
-    const [data, hash] = decoded.split('.')
-    const esperado = crypto.createHmac('sha256', SECRETO).update(data).digest('hex')
-    if (hash !== esperado) return null
-    const payload = JSON.parse(data)
-    if (payload.exp < Date.now()) return null
+    const payload = jwt.verify(token, SECRETO)
     return payload
   } catch {
     return null
@@ -69,6 +76,51 @@ function authMiddleware(req, res, next) {
 }
 
 app.use(express.json())
+
+// --- Validaciones del lado del servidor ---
+
+function validarCampos(nombre, email, telefono) {
+  if (!nombre || nombre.trim().length === 0 || nombre.length > 150) {
+    return 'El nombre es obligatorio (máx. 150 caracteres)'
+  }
+  if (!email || email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return 'Email inválido'
+  }
+  if (!telefono || telefono.length > 50 || !/^[\d\s+()-]{7,20}$/.test(telefono)) {
+    return 'Teléfono inválido (solo números, +, -, entre 7 y 20 caracteres)'
+  }
+  return null
+}
+
+function validarFecha(fecha) {
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  const f = new Date(`${fecha}T00:00:00`)
+  if (isNaN(f.getTime())) return 'Fecha inválida'
+  if (f < hoy) return 'La fecha no puede ser anterior a hoy'
+  return null
+}
+
+function validarHorario(horario) {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(horario)) return 'Horario inválido'
+  return null
+}
+
+// El total se obtiene exclusivamente del catálogo (tabla servicios).
+// El cliente nunca envía el precio: evita que un atacante reserve con total 0.
+function precioNumerico(precio) {
+  const n = parseInt(String(precio).replace(/[^0-9]/g, ''), 10)
+  return Number.isFinite(n) ? n : 0
+}
+
+async function totalDeServicio(titulo) {
+  const result = await pool.query(
+    'SELECT precio FROM servicios WHERE LOWER(titulo) = LOWER($1)',
+    [titulo]
+  )
+  if (result.rows.length === 0) return null
+  return precioNumerico(result.rows[0].precio)
+}
 
 async function inicializarDB() {
   const client = await pool.connect()
@@ -105,7 +157,26 @@ async function inicializarDB() {
         ADD COLUMN IF NOT EXISTS estado VARCHAR(20) DEFAULT 'pendiente'
     `)
 
-    console.log('Tablas verificadas/creadas correctamente')
+    await client.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_servicios_titulo ON servicios (titulo)')
+
+    // Servicios por defecto durante el primer arranque.
+    const serviciosDefault = [
+      ['Sesiones de Eventos', 'Cobertura completa de fiestas, celebraciones y eventos sociales.', '4 horas', '$25.000'],
+      ['Sesiones Particulares', 'Sesiones personalizadas para individuos o parejas.', '2 horas', '$15.000'],
+      ['Sesiones Temáticas', 'Sesiones con escenografía y vestuario acorde a la temática elegida.', '3 horas', '$20.000'],
+      ['Sesiones Infantiles', 'Sesiones para niños, escuelas y jardines de infantes.', '2 horas', '$18.000'],
+      ['Sesiones Individuales y Grupales', 'Sesiones para fotografía individual o grupal.', '2 horas', '$12.000'],
+    ]
+    for (const s of serviciosDefault) {
+      await client.query(
+        `INSERT INTO servicios (titulo, descripcion, duracion, precio)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (titulo) DO NOTHING`,
+        s
+      )
+    }
+
+    console.log('Tablas verificadas/creadas y catálogo de servicios sincronizado')
   } finally {
     client.release()
   }
@@ -122,17 +193,31 @@ app.get('/api/servicios', async (_req, res) => {
 })
 
 app.post('/api/reservas', async (req, res) => {
-  const { servicio, fecha, horario, nombre, email, telefono, mensaje, total } = req.body
+  const { servicio, fecha, horario, nombre, email, telefono, mensaje } = req.body
 
   if (!servicio || !fecha || !horario || !nombre || !email || !telefono) {
     return res.status(400).json({ error: 'Todos los campos obligatorios deben estar completos' })
+  }
+
+  const errorCampos = validarCampos(nombre, email, telefono)
+  if (errorCampos) return res.status(400).json({ error: errorCampos })
+
+  const errorFecha = validarFecha(fecha)
+  if (errorFecha) return res.status(400).json({ error: errorFecha })
+
+  const errorHorario = validarHorario(horario)
+  if (errorHorario) return res.status(400).json({ error: errorHorario })
+
+  const total = await totalDeServicio(servicio)
+  if (total === null) {
+    return res.status(400).json({ error: 'El servicio seleccionado no existe' })
   }
 
   try {
     const result = await pool.query(
       `INSERT INTO reservas (servicio, fecha, horario, nombre, email, telefono, mensaje, total)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-      [servicio, fecha, horario, nombre, email, telefono, mensaje || null, total || 0]
+      [servicio, fecha, horario, nombre, email, telefono, mensaje || null, total]
     )
     res.status(201).json({ id: result.rows[0].id, mensaje: 'Turno registrado correctamente' })
   } catch (err) {
@@ -145,7 +230,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ estado: 'ok', timestamp: new Date().toISOString() })
 })
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', loginLimiter, (req, res) => {
   const { username, password } = req.body
   if (!username || !password) {
     return res.status(400).json({ error: 'Usuario y contraseña requeridos' })
@@ -189,7 +274,7 @@ app.put('/api/reservas/:id/cobro', authMiddleware, async (req, res) => {
   const { id } = req.params
   const { monto } = req.body
 
-  if (monto == null || monto < 0) {
+  if (monto == null || monto <= 0) {
     return res.status(400).json({ error: 'Monto inválido' })
   }
 
@@ -200,6 +285,12 @@ app.put('/api/reservas/:id/cobro', authMiddleware, async (req, res) => {
     }
 
     const r = reserva.rows[0]
+    const saldoPendiente = r.total - r.abonado
+
+    if (monto > saldoPendiente) {
+      return res.status(400).json({ error: `El monto supera el saldo pendiente ($${saldoPendiente})` })
+    }
+
     const nuevoAbonado = r.abonado + monto
     let nuevoEstado = r.estado
     if (nuevoAbonado >= r.total) {
@@ -236,17 +327,31 @@ app.delete('/api/reservas/:id', authMiddleware, async (req, res) => {
 })
 
 app.post('/api/reservas/manual', authMiddleware, async (req, res) => {
-  const { servicio, fecha, horario, nombre, email, telefono, mensaje, total } = req.body
+  const { servicio, fecha, horario, nombre, email, telefono, mensaje } = req.body
 
   if (!servicio || !fecha || !horario || !nombre || !email || !telefono) {
     return res.status(400).json({ error: 'Todos los campos obligatorios deben estar completos' })
+  }
+
+  const errorCampos = validarCampos(nombre, email, telefono)
+  if (errorCampos) return res.status(400).json({ error: errorCampos })
+
+  const errorFecha = validarFecha(fecha)
+  if (errorFecha) return res.status(400).json({ error: errorFecha })
+
+  const errorHorario = validarHorario(horario)
+  if (errorHorario) return res.status(400).json({ error: errorHorario })
+
+  const total = await totalDeServicio(servicio)
+  if (total === null) {
+    return res.status(400).json({ error: 'El servicio seleccionado no existe' })
   }
 
   try {
     const result = await pool.query(
       `INSERT INTO reservas (servicio, fecha, horario, nombre, email, telefono, mensaje, total, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pendiente') RETURNING *`,
-      [servicio, fecha, horario, nombre, email, telefono, mensaje || null, total || 0]
+      [servicio, fecha, horario, nombre, email, telefono, mensaje || null, total]
     )
     res.status(201).json(result.rows[0])
   } catch (err) {

@@ -4,7 +4,7 @@ import SEO from '../components/SEO'
 function NotFound() {
   return (
     <>
-      <SEO title="Página no encontrada" />
+      <SEO title="Página no encontrada" noindex />
       <div className="bg-[#F5F1EC] min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center text-center px-4">
         <span className="text-8xl md:text-9xl font-bold text-[#C1121F]">404</span>
         <h1 className="text-3xl md:text-4xl font-bold text-[#373435] mt-4">

@@ -18,6 +18,7 @@ Toda la documentación del proyecto se encuentra en la carpeta [`/docs`](./docs/
 - [05 - Escalabilidad](./docs/05%20-%20escalabilidad.md)
 - [06 - Changelog](./docs/06%20-%20changelog.md)
 - [07 - IA Aplicada](./docs/07-ia-aplicada.md)
+- [08 - Mejoras Aplicadas](./docs/08%20-%20mejoras%20de%20seguridad.md)
 
 ---
 

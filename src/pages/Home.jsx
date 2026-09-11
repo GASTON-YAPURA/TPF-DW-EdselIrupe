@@ -3,6 +3,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
+import Reveal from '../components/Reveal'
+import Galeria from '../components/Galeria'
+import Testimonios from '../components/Testimonios'
+import Faq from '../components/Faq'
+import { preguntasFaq } from '../components/faqData'
 import fondoMain from '../assets/fondo main.png'
 import eventos from '../assets/eventos.png'
 import particulares from '../assets/particulares.png'
@@ -12,12 +17,12 @@ import grupales from '../assets/individuales y grupales.png'
 
 const jsonLdLocalBusiness = {
   '@context': 'https://schema.org',
-  '@type': 'LocalBusiness',
+  '@type': 'Photographer',
   name: 'Edsellrupe - Fotografía',
   description: 'Estudio fotográfico profesional en Tinogasta, Catamarca. Sesiones de eventos, particulares, temáticas, infantiles, individuales y grupales.',
   url: 'https://tpf-dw-edsel-irupe.vercel.app',
-  telephone: '+54 9 1234 56-789',
-  email: 'info@edsellrupe.com',
+  telephone: '+54 3837 430319',
+  email: 'irupevilla57@gmail.com',
   address: {
     '@type': 'PostalAddress',
     streetAddress: 'Copiapó, Eva Perón',
@@ -27,11 +32,24 @@ const jsonLdLocalBusiness = {
     addressCountry: 'AR',
   },
   sameAs: [
-    'https://instagram.com/edsellrupe',
-    'https://facebook.com/edsellrupe',
+    'https://www.instagram.com/edselirupe/',
+    'https://www.facebook.com/profile.php?id=100064043828944',
   ],
   priceRange: '$$',
   image: 'https://tpf-dw-edsel-irupe.vercel.app/icono.png',
+}
+
+const jsonLdFaq = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: preguntasFaq.map((faq) => ({
+    '@type': 'Question',
+    name: faq.pregunta,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: faq.respuesta,
+    },
+  })),
 }
 
 const slides = [
@@ -136,7 +154,7 @@ function Home() {
       <SEO
         title="Inicio"
         description="Edsellrupe - Fotografía profesional en Tinogasta, Catamarca. Sesiones de eventos, particulares, temáticas, infantiles y grupales."
-        jsonLd={jsonLdLocalBusiness}
+        jsonLd={[jsonLdLocalBusiness, jsonLdFaq]}
       />
     <div className="bg-[#F5F1EC]">
       {/* Hero */}
@@ -173,42 +191,62 @@ function Home() {
       </section>
 
       {/* Filosofía */}
-      <section className="px-4 py-16 md:py-24 max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-[#373435] mb-10 text-center">
-          Nuestra{' '}
-         Filosofía: <span className="text-[#C1121F]">¿Quienes Somos?</span>
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-          {/* Texto */}
-          <div>
-            <p className="text-[#373435] text-lg md:text-xl leading-relaxed opacity-80">
-              Edsellrupe es un proyecto fotográfico que nace desde lo más íntimo:
-              el deseo de preservar instantes únicos y significativos. Iniciamos
-              como una pareja apasionada por la fotografía, descubriendo que
-              podíamos transformar ese hobby en algo hermoso, auténtico y
-              profesional. Lo que comenzó como una inquietud artística hoy se ha
-              convertido en una propuesta con identidad propia, donde cada toma
-              busca dejar huella.
-            </p>
-            <p className="mt-6 text-[#373435] text-lg md:text-xl leading-relaxed opacity-80">
-              Nos destacamos por una atención cercana, sensible y empática.
-              Nuestro enfoque no es solo técnico, sino también emocional:
-              entendemos que detrás de cada sesión hay una historia que merece
-              ser contada con calidez, creatividad y respeto. Desde recién
-              nacidos hasta adultos mayores, nos inspira capturar la esencia de
-              las personas en todas las etapas de la vida.
-            </p>
-          </div>
+      <Reveal>
+        <section className="px-4 py-16 md:py-24 max-w-6xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-[#373435] mb-10 text-center">
+            Nuestra{' '}
+           Filosofía: <span className="text-[#C1121F]">¿Quienes Somos?</span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+            {/* Texto */}
+            <div>
+              <p className="text-[#373435] text-lg md:text-xl leading-relaxed opacity-80">
+                Edsellrupe es un proyecto fotográfico que nace desde lo más íntimo:
+                el deseo de preservar instantes únicos y significativos. Iniciamos
+                como una pareja apasionada por la fotografía, descubriendo que
+                podíamos transformar ese hobby en algo hermoso, auténtico y
+                profesional. Lo que comenzó como una inquietud artística hoy se ha
+                convertido en una propuesta con identidad propia, donde cada toma
+                busca dejar huella.
+              </p>
+              <p className="mt-6 text-[#373435] text-lg md:text-xl leading-relaxed opacity-80">
+                Nos destacamos por una atención cercana, sensible y empática.
+                Nuestro enfoque no es solo técnico, sino también emocional:
+                entendemos que detrás de cada sesión hay una historia que merece
+                ser contada con calidez, creatividad y respeto. Desde recién
+                nacidos hasta adultos mayores, nos inspira capturar la esencia de
+                las personas en todas las etapas de la vida.
+              </p>
+            </div>
 
-          {/* Slider */}
-          <FilosofiaSlider />
-        </div>
-      </section>
+            {/* Slider */}
+            <FilosofiaSlider />
+          </div>
+        </section>
+      </Reveal>
 
       <hr className="border-t border-[#373435] border-opacity-20 max-w-4xl mx-auto" />
 
       {/* Sesiones Más Pedidas */}
-      <SesionesMasPedidas />
+      <Reveal>
+        <SesionesMasPedidas />
+      </Reveal>
+
+      {/* Galería */}
+      <Reveal>
+        <Galeria />
+      </Reveal>
+
+      {/* Testimonios */}
+      <Reveal>
+        <Testimonios />
+      </Reveal>
+
+      {/* FAQ */}
+      <Reveal>
+        <Faq />
+      </Reveal>
+
       <ScrollToTop />
     </div>
     </>

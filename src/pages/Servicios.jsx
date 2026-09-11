@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
+import Reveal from '../components/Reveal'
 import eventos from '../assets/eventos.png'
 import particulares from '../assets/particulares.png'
 import tematica from '../assets/temática.png'
@@ -70,39 +71,39 @@ function Servicios() {
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {servicios.map((s) => (
-          <div
-            key={s.id}
-            className="rounded-lg overflow-hidden shadow-md bg-[#FEFEFE] border border-[#E5E5E5]"
-          >
-            <img
-              src={s.imagen}
-              alt={s.titulo}
-              className="h-48 w-full object-cover"
-            />
-            <div className="p-5">
-              <h3 className="text-xl font-bold text-[#373435] mb-2">
-                {s.titulo}
-              </h3>
-              <p className="text-[#373435] opacity-70 mb-4">
-                {s.descripcion}
-              </p>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-[#373435] opacity-60">
-                  Duración: {s.duracion}
-                </span>
-                <span className="text-lg font-bold text-[#C1121F]">
-                  {s.precio}
-                </span>
+        {servicios.map((s, i) => (
+          <Reveal key={s.id} delay={i * 100}>
+            <div className="rounded-lg overflow-hidden shadow-md bg-[#FEFEFE] border border-[#E5E5E5]">
+              <img
+                src={s.imagen}
+                alt={s.titulo}
+                loading="lazy"
+                className="h-48 w-full object-cover"
+              />
+              <div className="p-5">
+                <h3 className="text-xl font-bold text-[#373435] mb-2">
+                  {s.titulo}
+                </h3>
+                <p className="text-[#373435] opacity-70 mb-4">
+                  {s.descripcion}
+                </p>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-[#373435] opacity-60">
+                    Duración: {s.duracion}
+                  </span>
+                  <span className="text-lg font-bold text-[#C1121F]">
+                    {s.precio}
+                  </span>
+                </div>
+                <button
+                  onClick={() => navigate('/reservar', { state: { servicio: s.titulo } })}
+                  className="w-full text-center bg-[#C1121F] text-[#FEFEFE] py-2.5 rounded-md font-semibold hover:bg-[#5A0B15] transition-colors cursor-pointer"
+                >
+                  Agendar
+                </button>
               </div>
-              <button
-                onClick={() => navigate('/reservar', { state: { servicio: s.titulo } })}
-                className="w-full text-center bg-[#C1121F] text-[#FEFEFE] py-2.5 rounded-md font-semibold hover:bg-[#5A0B15] transition-colors cursor-pointer"
-              >
-                Agendar
-              </button>
             </div>
-          </div>
+          </Reveal>
         ))}
       </div>
     </section>

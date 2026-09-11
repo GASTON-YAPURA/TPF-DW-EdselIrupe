@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
-import { LogIn, LogOut, Lock, Plus, Trash2, DollarSign, CalendarDays, Clock, User, Mail, Phone, MessageSquare, BarChart3, TrendingUp, AlertCircle, X, Loader2 } from 'lucide-react'
+import { LogIn, LogOut, Lock, Plus, Trash2, DollarSign, BarChart3, TrendingUp, AlertCircle, X, Loader2 } from 'lucide-react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://edsellrupe-api.onrender.com/api'
 
@@ -14,7 +14,8 @@ const serviciosList = [
 ]
 
 function Admin() {
-  const [logueado, setLogueado] = useState(false)
+  const [token, setToken] = useState(() => sessionStorage.getItem('token'))
+  const [logueado, setLogueado] = useState(Boolean(token))
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -25,16 +26,11 @@ function Admin() {
   const [modalCobro, setModalCobro] = useState(null)
   const [montoCobro, setMontoCobro] = useState('')
   const [modalManual, setModalManual] = useState(false)
-  const [formManual, setFormManual] = useState({ servicio: '', fecha: '', horario: '', nombre: '', email: '', telefono: '', mensaje: '', total: '' })
-
-  const tokenGuardado = sessionStorage.getItem('token')
+  const [formManual, setFormManual] = useState({ servicio: '', fecha: '', horario: '', nombre: '', email: '', telefono: '', mensaje: '' })
 
   useEffect(() => {
-    if (tokenGuardado) {
-      setLogueado(true)
-      cargarDatos(tokenGuardado)
-    }
-  }, [])
+    if (token) cargarDatos(token)
+  }, [token])
 
   async function cargarDatos(token) {
     setCargandoDatos(true)
@@ -65,14 +61,15 @@ function Admin() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Error al iniciar sesión'); return }
       sessionStorage.setItem('token', data.token)
+      setToken(data.token)
       setLogueado(true)
-      await cargarDatos(data.token)
     } catch { setError('Error de conexión') }
     finally { setCargando(false) }
   }
 
   function cerrarSesion() {
     sessionStorage.removeItem('token')
+    setToken(null)
     setLogueado(false)
     setReservas([])
     setKpis({ reservas_activas: 0, ingresos_registrados: 0, cobro_pendiente: 0 })
@@ -83,13 +80,13 @@ function Admin() {
     try {
       const res = await fetch(`${API_URL}/reservas/${modalCobro}/cobro`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenGuardado}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ monto: Number(montoCobro) }),
       })
       if (res.ok) {
         setModalCobro(null)
         setMontoCobro('')
-        await cargarDatos(tokenGuardado)
+        await cargarDatos(token)
       }
     } catch { setError('Error al registrar cobro') }
   }
@@ -99,9 +96,9 @@ function Admin() {
     try {
       const res = await fetch(`${API_URL}/reservas/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${tokenGuardado}` },
+        headers: { Authorization: `Bearer ${token}` },
       })
-      if (res.ok) await cargarDatos(tokenGuardado)
+      if (res.ok) await cargarDatos(token)
     } catch { setError('Error al eliminar') }
   }
 
@@ -111,13 +108,13 @@ function Admin() {
     try {
       const res = await fetch(`${API_URL}/reservas/manual`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenGuardado}` },
-        body: JSON.stringify({ ...formManual, total: Number(formManual.total) || 0 }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(formManual),
       })
       if (res.ok) {
         setModalManual(false)
-        setFormManual({ servicio: '', fecha: '', horario: '', nombre: '', email: '', telefono: '', mensaje: '', total: '' })
-        await cargarDatos(tokenGuardado)
+        setFormManual({ servicio: '', fecha: '', horario: '', nombre: '', email: '', telefono: '', mensaje: '' })
+        await cargarDatos(token)
       }
     } catch { setError('Error al crear reserva') }
   }
@@ -128,10 +125,10 @@ function Admin() {
     return 'bg-red-100 text-red-800'
   }
 
-  if (!logueado && !tokenGuardado) {
+  if (!logueado && !token) {
     return (
       <>
-        <SEO title="Panel Admin" />
+        <SEO title="Panel Admin" noindex />
         <div className="bg-[#F5F1EC] min-h-screen">
           <section className="pt-30 pb-20 px-4 max-w-md mx-auto">
             <div className="text-center mb-10">
@@ -164,7 +161,7 @@ function Admin() {
 
   return (
     <>
-      <SEO title="Panel Admin" />
+      <SEO title="Panel Admin" noindex />
       <div className="bg-[#F5F1EC] min-h-screen">
         <section className="pt-30 pb-20 px-4 max-w-6xl mx-auto">
 
@@ -323,7 +320,7 @@ function Admin() {
             <div className="bg-[#FEFEFE] rounded-lg p-6 w-full max-w-lg shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-[#373435]">Añadir Turno Manual</h2>
-                <button onClick={() => { setModalManual(false); setFormManual({ servicio: '', fecha: '', horario: '', nombre: '', email: '', telefono: '', mensaje: '', total: '' }) }} className="cursor-pointer">
+                <button onClick={() => { setModalManual(false); setFormManual({ servicio: '', fecha: '', horario: '', nombre: '', email: '', telefono: '', mensaje: '' }) }} className="cursor-pointer">
                   <X size={20} className="text-[#373435]" />
                 </button>
               </div>
@@ -366,17 +363,12 @@ function Admin() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#373435] mb-1">Monto Total ($)</label>
-                  <input type="number" value={formManual.total} onChange={(e) => setFormManual({ ...formManual, total: e.target.value })} placeholder="0"
-                    className="w-full border border-[#E5E5E5] rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#C1121F]" />
-                </div>
-                <div>
                   <label className="block text-sm font-semibold text-[#373435] mb-1">Mensaje (opcional)</label>
                   <textarea value={formManual.mensaje} onChange={(e) => setFormManual({ ...formManual, mensaje: e.target.value })} rows={2} placeholder="Notas..."
                     className="w-full border border-[#E5E5E5] rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#C1121F] resize-none" />
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => { setModalManual(false); setFormManual({ servicio: '', fecha: '', horario: '', nombre: '', email: '', telefono: '', mensaje: '', total: '' }) }}
+                  <button type="button" onClick={() => { setModalManual(false); setFormManual({ servicio: '', fecha: '', horario: '', nombre: '', email: '', telefono: '', mensaje: '' }) }}
                     className="flex-1 border-2 border-[#373435] text-[#373435] py-2.5 rounded-md font-semibold hover:bg-[#373435] hover:text-[#FEFEFE] transition-colors cursor-pointer">
                     Cancelar
                   </button>
