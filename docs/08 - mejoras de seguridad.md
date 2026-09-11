@@ -258,7 +258,7 @@ Dejé un **blueprint** en la raíz del repo (`render.yaml`). Crea la API con los
 | SEO | `noindex` en Admin y 404 | No indexa páginas privadas |
 | SEO | Favicon, `theme-color`, Twitter Cards, `og:locale`, robots.txt, sitemap `<lastmod>` | Meta completo |
 | UX | Botón flotante de WhatsApp | Canal de contacto directo |
-| UX | Galería con lightbox | Muestra el trabajo |
+| UX | Galería por colecciones (estilo Pixieset) | Muestra el trabajo por sesión |
 | UX | Testimonios de clientes | Confianza social |
 | UX | Sección FAQ (visual + JSON-LD) | Resuelve dudas + SEO |
 | UX | Mapa de ubicación embebido | Contexto local |
@@ -266,7 +266,8 @@ Dejé un **blueprint** en la raíz del repo (`render.yaml`). Crea la API con los
 | PWA | Manifest + Service Worker + iconos | Instalable y offline (meta del TP) |
 
 Archivos tocados/creados:
-- `src/components/SEO.jsx`, `src/components/{WhatsAppButton,Galeria,Testimonios,Faq,Reveal}.jsx`, `src/components/faqData.js`
+- `src/components/SEO.jsx`, `src/components/{WhatsAppButton,GaleriaSesiones,Testimonios,Faq,Reveal}.jsx`, `src/components/galeriaData.js`
+- `src/assets/galeria/` (60 fotos reales, 10 por colección, optimizadas a 1024 px)
 - `src/pages/Home.jsx`, `src/pages/Servicios.jsx`, `src/pages/Admin.jsx`, `src/pages/NotFound.jsx`
 - `src/App.jsx`, `src/main.jsx`, `src/components/Footer.jsx`
 - `index.html`, `public/manifest.webmanifest`, `public/sw.js`, `public/robots.txt`, `public/sitemap.xml`, `vercel.json`
@@ -339,10 +340,18 @@ Componente `WhatsAppButton.jsx` montado en `App.jsx` (visible en todo el sitio, 
 
 > 🎤 **Argumento para la mesa:** "Agregamos un botón flotante de WhatsApp con mensaje precargado. Es el canal de contacto que más usa el público local y reduce la fricción para consultar: un clic y ya están escribiendo con el mensaje listo."
 
-### 2. Galería con lightbox
-Componente `Galeria.jsx`: grilla responsive con las imágenes reales (2 columnas en mobile, 3 en desktop) y **lightbox** al hacer clic: imagen grande, navegación con flechas prev/next, cierre con `X` o tecla `Escape`, navegación de teclado (`←`/`→`) y bloqueo del scroll de fondo. Las imágenes usan `loading="lazy"` y un `hover` con zoom.
+### 2. Galería por colecciones (estilo Pixieset)
+Componente `GaleriaSesiones.jsx` (reemplaza a `Galeria.jsx`), inspirado en el sitio de galerías **Pixieset** de la pareja:
 
-> 🎤 **Argumento para la mesa:** "La galería muestra el trabajo del estudio en grilla y en un visor (lightbox) accesible: se controla con clic y teclado, respeta la semántica y usa lazy loading para no penalizar el rendimiento."
+- **Grilla de colecciones**: cards con la foto de portada, gradiente oscuro, nombre de la sesión y cantidad de fotos. Grilla 2 columnas (mobile) / 3 (desktop), hover con zoom.
+- **Click en una colección → galería a pantalla completa**: overlay oscuro (`z-[60]`, sobre el header) con el título, contador y una grilla scrollable de las fotos de esa sesión.
+- **Click en una foto → lightbox**: imagen grande, flechas prev/next, contador de posición, cierre con `X` o `Escape`, navegación por teclado (`←`/`→`), bloqueo del scroll de fondo, `role="dialog"` + `aria-modal` y foco gestionado (el `Escape` cierra primero el visor y luego la colección).
+
+**Datos:** `galeriaData.js` define 6 colecciones (**Bebés, Paisajes, Bodas, Infantiles, Embarazo, Bautismos**) con **10 fotos reales cada una** bajadas del CDN de las galerías Pixieset del estudio e **optimizadas a 1024 px** (redimensionado + JPEG calidad 82) en `src/assets/galeria/<coleccion>/`.
+
+> 📥 **Cómo agregar más fotos:** copiás la imagen en `src/assets/galeria/COLECCION/`, la importás en `galeriaData.js` y la sumás al array `fotos` de esa colección. La grilla, el contador y el lightbox la incorporan automáticamente.
+
+> 🎤 **Argumento para la mesa:** "La galería replica la experiencia de un sitio de entregas de fotos (Pixieset): la clienta entra a su tipo de sesión y navega todas sus fotos en pantalla completa. Todo es accesible por clic y teclado, con lazy loading en cada imagen y sin cargar librerías externas: el visor (lightbox) es un componente propio."
 
 ### 3. Testimonios
 Componente `Testimonios.jsx`: 3 reseñas con estrellas (iconos `Star` de lucide) y nombre del cliente. Son ejemplos de demostración, listos para reemplazar por opiniones reales.

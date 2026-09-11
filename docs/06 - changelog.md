@@ -239,3 +239,23 @@ https://tpf-dw-edsel-irupe.vercel.app/
            start npm start, healthCheckPath /api/servicios y las 4 variables
            (DATABASE_URL, JWT_SECRET, ADMIN_USER, ADMIN_PASS) con sync: false
          - docs/08: nueva sección "Deploy de la API en Render" con pasos del Dashboard
+
+## COMMIT E7: GALERÍA POR COLECCIONES (ESTILO PIXIESET)
+ 44. Fotos reales desde el CDN de Pixieset:
+         - Script de descarga desde el feed interno client/loadphotos/?cuk=&cid=&gs=highlights
+         - 10 fotos por colección (Bebés, Paisajes, Bodas, Infantiles, Embarazo, Bautismos)
+         - Optimizadas a 1024px / JPEG 82 en src/assets/galeria/<coleccion>/
+
+ 45. Datos:
+         - galeriaData.js: 6 colecciones con portada + fotos (importadas y tipadas)
+
+ 46. Componente GaleriaSesiones.jsx (reemplaza a Galeria.jsx):
+         - Grilla de colecciones con portada, gradiente y contador de fotos
+         - Click -> overlay a pantalla completa con la grilla de la sesión
+         - Click en foto -> lightbox (prev/next, teclado, contador, bloqueo scroll)
+         - Accesible: role=dialog, aria-modal, foco gerenciado, Escape cierra visor y luego colección
+
+ 47. Integración y docs:
+         - Home.jsx usa GaleriaSesiones (mantiene id="galeria" y Reveal)
+         - Se elimina Galeria.jsx
+         - docs/08: sección de galería actualizada + cómo agregar fotos

@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
 import Reveal from '../components/Reveal'
-import Galeria from '../components/Galeria'
+import GaleriaSesiones from '../components/GaleriaSesiones'
 import Testimonios from '../components/Testimonios'
 import Faq from '../components/Faq'
 import { preguntasFaq } from '../components/faqData'
@@ -234,7 +234,7 @@ function Home() {
 
       {/* Galería */}
       <Reveal>
-        <Galeria />
+        <GaleriaSesiones />
       </Reveal>
 
       {/* Testimonios */}
