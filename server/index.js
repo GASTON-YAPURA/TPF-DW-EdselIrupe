@@ -75,7 +75,7 @@ function authMiddleware(req, res, next) {
   next()
 }
 
-app.use(express.json())
+app.use(express.json({ limit: '15mb' }))
 
 // --- Validaciones del lado del servidor ---
 
@@ -157,6 +157,24 @@ async function inicializarDB() {
         ADD COLUMN IF NOT EXISTS estado VARCHAR(20) DEFAULT 'pendiente'
     `)
 
+    await client.query(`
+      ALTER TABLE servicios
+        ADD COLUMN IF NOT EXISTS imagen BYTEA,
+        ADD COLUMN IF NOT EXISTS imagen_mime VARCHAR(50)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS galeria_fotos (
+        id SERIAL PRIMARY KEY,
+        coleccion VARCHAR(50) NOT NULL,
+        nombre_archivo VARCHAR(150),
+        mime VARCHAR(50) NOT NULL,
+        bytes BYTEA NOT NULL,
+        creada_en TIMESTAMP DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_galeria_coleccion ON galeria_fotos (coleccion);
+    `)
+
     await client.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_servicios_titulo ON servicios (titulo)')
 
     // Servicios por defecto durante el primer arranque.
@@ -184,11 +202,236 @@ async function inicializarDB() {
 
 app.get('/api/servicios', async (_req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM servicios ORDER BY id')
+    // No se envían los bytes de imagen en la lista: solo si tiene o no.
+    const result = await pool.query(
+      `SELECT id, titulo, descripcion, duracion, precio,
+              (imagen IS NOT NULL) AS tiene_imagen
+       FROM servicios ORDER BY id`
+    )
     res.json(result.rows)
   } catch (err) {
     console.error('Error al obtener servicios:', err)
     res.status(500).json({ error: 'Error al obtener servicios' })
+  }
+})
+
+// --- Validación de imágenes (base64) ---
+const MIMES_VALIDOS = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const TAMANIO_MAX_IMAGEN = 6 * 1024 * 1024 // 6 MB
+
+function validarImagen(data, mime) {
+  if (!MIMES_VALIDOS.has(mime)) {
+    return { error: 'Formato no permitido (solo JPG, PNG o WebP)' }
+  }
+  const base64 = String(data || '').replace(/^data:[^;]+;base64,/, '')
+  if (!base64) {
+    return { error: 'La imagen está vacía' }
+  }
+  const bytes = Buffer.byteLength(base64, 'base64')
+  if (bytes > TAMANIO_MAX_IMAGEN) {
+    return { error: 'La imagen no puede superar los 6 MB' }
+  }
+  return { base64, bytes }
+}
+
+function validarServicio(titulo, descripcion, duracion, precio) {
+  if (!titulo || titulo.trim().length === 0 || titulo.length > 100) {
+    return 'El título es obligatorio (máx. 100 caracteres)'
+  }
+  if (!descripcion || descripcion.trim().length === 0 || descripcion.length > 1000) {
+    return 'La descripción es obligatoria (máx. 1000 caracteres)'
+  }
+  if (!duracion || duracion.length > 50) {
+    return 'La duración es obligatoria (máx. 50 caracteres)'
+  }
+  if (!precio || precio.length > 20 || !/^\$?[\d.,]+$/.test(String(precio))) {
+    return 'El precio debe ser numérico (ej: $25.000)'
+  }
+  return null
+}
+
+// --- Servicios: CRUD (solo admin) ---
+app.post('/api/servicios', authMiddleware, async (req, res) => {
+  const { titulo, descripcion, duracion, precio } = req.body
+  const error = validarServicio(titulo, descripcion, duracion, precio)
+  if (error) return res.status(400).json({ error })
+  try {
+    const result = await pool.query(
+      `INSERT INTO servicios (titulo, descripcion, duracion, precio)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, titulo, descripcion, duracion, precio, false AS tiene_imagen`,
+      [titulo.trim(), descripcion.trim(), duracion, precio]
+    )
+    res.status(201).json(result.rows[0])
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'Ya existe un servicio con ese título' })
+    }
+    console.error('Error al crear servicio:', err)
+    res.status(500).json({ error: 'Error al crear el servicio' })
+  }
+})
+
+app.put('/api/servicios/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params
+  const { titulo, descripcion, duracion, precio } = req.body
+  const error = validarServicio(titulo, descripcion, duracion, precio)
+  if (error) return res.status(400).json({ error })
+  try {
+    const result = await pool.query(
+      `UPDATE servicios
+       SET titulo = $1, descripcion = $2, duracion = $3, precio = $4
+       WHERE id = $5
+       RETURNING id, titulo, descripcion, duracion, precio, false AS tiene_imagen`,
+      [titulo.trim(), descripcion.trim(), duracion, precio, id]
+    )
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Servicio no encontrado' })
+    }
+    res.json(result.rows[0])
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'Ya existe un servicio con ese título' })
+    }
+    console.error('Error al actualizar servicio:', err)
+    res.status(500).json({ error: 'Error al actualizar el servicio' })
+  }
+})
+
+app.delete('/api/servicios/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params
+  try {
+    const result = await pool.query('DELETE FROM servicios WHERE id = $1 RETURNING id', [id])
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Servicio no encontrado' })
+    }
+    res.json({ mensaje: 'Servicio eliminado correctamente' })
+  } catch (err) {
+    console.error('Error al eliminar servicio:', err)
+    res.status(500).json({ error: 'Error al eliminar el servicio' })
+  }
+})
+
+// --- Imagen de servicio ---
+app.get('/api/servicios/:id/imagen', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT imagen, imagen_mime FROM servicios WHERE id = $1',
+      [req.params.id]
+    )
+    if (result.rows.length === 0 || !result.rows[0].imagen) {
+      return res.status(404).json({ error: 'Imagen no disponible' })
+    }
+    res.set('Content-Type', result.rows[0].imagen_mime)
+    res.set('Cache-Control', 'public, max-age=3600')
+    res.send(result.rows[0].imagen)
+  } catch (err) {
+    console.error('Error al obtener imagen de servicio:', err)
+    res.status(500).json({ error: 'Error al obtener la imagen' })
+  }
+})
+
+app.post('/api/servicios/:id/imagen', authMiddleware, async (req, res) => {
+  const validador = validarImagen(req.body.data, req.body.mime)
+  if (validador.error) return res.status(400).json({ error: validador.error })
+  try {
+    const existe = await pool.query('SELECT id FROM servicios WHERE id = $1', [req.params.id])
+    if (existe.rows.length === 0) {
+      return res.status(404).json({ error: 'Servicio no encontrado' })
+    }
+    await pool.query(
+      'UPDATE servicios SET imagen = $1, imagen_mime = $2 WHERE id = $3',
+      [Buffer.from(validador.base64, 'base64'), req.body.mime, req.params.id]
+    )
+    res.json({ mensaje: 'Imagen actualizada correctamente' })
+  } catch (err) {
+    console.error('Error al guardar imagen de servicio:', err)
+    res.status(500).json({ error: 'Error al guardar la imagen' })
+  }
+})
+
+app.delete('/api/servicios/:id/imagen', authMiddleware, async (req, res) => {
+  try {
+    await pool.query(
+      'UPDATE servicios SET imagen = NULL, imagen_mime = NULL WHERE id = $1',
+      [req.params.id]
+    )
+    res.json({ mensaje: 'Imagen eliminada (se usa la imagen por defecto)' })
+  } catch (err) {
+    console.error('Error al eliminar imagen de servicio:', err)
+    res.status(500).json({ error: 'Error al eliminar la imagen' })
+  }
+})
+
+// --- Galería: fotos almacenadas en la base de datos ---
+app.get('/api/galeria', async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, coleccion, nombre_archivo, mime, creada_en
+       FROM galeria_fotos ORDER BY coleccion, id`
+    )
+    const colecciones = await pool.query('SELECT DISTINCT coleccion FROM galeria_fotos ORDER BY coleccion')
+    res.json({
+      colecciones: colecciones.rows.map((r) => r.coleccion),
+      fotos: result.rows,
+    })
+  } catch (err) {
+    console.error('Error al obtener galería:', err)
+    res.status(500).json({ error: 'Error al obtener galería' })
+  }
+})
+
+app.get('/api/galeria/:id/imagen', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT bytes, mime FROM galeria_fotos WHERE id = $1',
+      [req.params.id]
+    )
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Foto no encontrada' })
+    }
+    res.set('Content-Type', result.rows[0].mime)
+    res.set('Cache-Control', 'public, max-age=3600')
+    res.send(result.rows[0].bytes)
+  } catch (err) {
+    console.error('Error al obtener foto de galería:', err)
+    res.status(500).json({ error: 'Error al obtener la foto' })
+  }
+})
+
+app.post('/api/galeria', authMiddleware, async (req, res) => {
+  const coleccion = String(req.body.coleccion || '').trim().slice(0, 50)
+  if (!coleccion) {
+    return res.status(400).json({ error: 'La colección es obligatoria' })
+  }
+  const validador = validarImagen(req.body.data, req.body.mime)
+  if (validador.error) return res.status(400).json({ error: validador.error })
+  const nombre_archivo = String(req.body.nombre_archivo || '').trim().slice(0, 150) || null
+  try {
+    const result = await pool.query(
+      `INSERT INTO galeria_fotos (coleccion, nombre_archivo, mime, bytes)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, coleccion, nombre_archivo, mime, creada_en`,
+      [coleccion, nombre_archivo, req.body.mime, Buffer.from(validador.base64, 'base64')]
+    )
+    res.status(201).json(result.rows[0])
+  } catch (err) {
+    console.error('Error al subir foto de galería:', err)
+    res.status(500).json({ error: 'Error al subir la foto' })
+  }
+})
+
+app.delete('/api/galeria/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params
+  try {
+    const result = await pool.query('DELETE FROM galeria_fotos WHERE id = $1 RETURNING id', [id])
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Foto no encontrada' })
+    }
+    res.json({ mensaje: 'Foto eliminada correctamente' })
+  } catch (err) {
+    console.error('Error al eliminar foto de galería:', err)
+    res.status(500).json({ error: 'Error al eliminar la foto' })
   }
 })
 

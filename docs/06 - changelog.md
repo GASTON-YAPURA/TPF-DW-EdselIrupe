@@ -259,3 +259,31 @@ https://tpf-dw-edsel-irupe.vercel.app/
          - Home.jsx usa GaleriaSesiones (mantiene id="galeria" y Reveal)
          - Se elimina Galeria.jsx
          - docs/08: sección de galería actualizada + cómo agregar fotos
+
+## COMMIT E8: PANEL ADMIN CON SERVICIOS Y GALERÍA + FOTOS EN LA BASE DE DATOS
+ 48. Base de datos:
+         - Tabla galeria_fotos (coleccion, nombre_archivo, mime, bytes BYTEA, creada_en) + índice por colección
+         - Columnas imagen / imagen_mime en servicios (BYTEA)
+         - Auto-creación de esquema en inicializarDB (idempotente)
+
+ 49. Backend (server/index.js):
+         - express.json({ limit: '15mb' }) para aceptar uploads en JSON sin agregar dependencias
+         - CRUD de servicios protegido (POST / PUT / DELETE /api/servicios)
+         - Imagen por servicio: POST / DELETE (auth) y GET público /api/servicios/:id/imagen
+         - Galería: GET /api/galeria (metadatos, sin bytes), GET /api/galeria/:id/imagen (público),
+           POST (auth, validación MIME jpg/png/webp + tope 6 MB) y DELETE (auth)
+
+ 50. Frontend:
+         - lib/api.js: base de API + helpers para URLs de imágenes
+         - Servicios.jsx y Reservar.jsx leen de la API con fallback a los datos estáticos
+         - Servicios muestra imagen de la base si el servicio tiene; si no, la PNG local
+         - GaleriaSesiones.jsx fusiona las fotos de la base con las locales y agrega colecciones nuevas
+
+ 51. Panel Admin (Admin.jsx): 3 pestañas
+         - Reservas (como estaba) / Servicios (CRUD + subir imagen) / Galería (subida múltiple + borrado)
+         - El dropdown de turno manual usa los servicios de la API
+         - Validación de archivos en cliente y servidor
+
+ 52. Docs:
+         - docs/08 reorganizado en Backend / Frontend / Base de datos con las mejoras nuevas
+         - changelog COMMIT E8

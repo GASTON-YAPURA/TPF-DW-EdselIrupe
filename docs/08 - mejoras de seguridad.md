@@ -1,7 +1,8 @@
 # 🔧 08 - Mejoras Aplicadas al Proyecto
 
 > Documento guía de las mejoras implementadas sobre Edsellrupe.
-> Está dividido en **MEJORAS EN EL BACKEND** y **MEJORAS EN EL FRONTEND**.
+> Está dividido en **MEJORAS EN EL BACKEND**, **MEJORAS EN EL FRONTEND** y
+> **MEJORAS EN LA BASE DE DATOS**.
 > Cada mejora incluye: **problemática**, **solución aplicada**, **archivos tocados** y un
 > **argumento de 2 minutos** para explicarla en la mesa de examen final.
 
@@ -22,6 +23,9 @@
 | 7 | `helmet` en la API | Endurece las cabeceras HTTP de la API |
 | 8 | Catálogo de servicios centralizado en la base de datos | Una sola fuente de verdad para precios |
 | 9 | Control de sobrepago en los cobros | El cliente no puede pagar más del saldo |
+| 10 | CRUD de servicios con endpoints protegidos | El panel puede crear/editar/borrar servicios |
+| 11 | Subida de imágenes (servicios y galería) con validación | MIME permitido + tope 6 MB por archivo |
+| 12 | Límite de tamaño del body JSON (`15mb`) | Admite uploads por JSON sin agregar dependencias |
 
 Archivos tocados:
 - `server/index.js`
@@ -247,6 +251,136 @@ Dejé un **blueprint** en la raíz del repo (`render.yaml`). Crea la API con los
 
 ---
 
+## 🔟 1️⃣0️⃣ CRUD de servicios con endpoints protegidos
+
+### Problemática
+La web mostraba los servicios **hardcodeados** en el frontend y la API solo permitía leerlos (`GET /api/servicios`). Para cambiar un servicio había que tocar código y volver a deployar.
+
+### Solución
+Nuevos endpoints, todos detrás de `authMiddleware` (JWT):
+```js
+app.post('/api/servicios', authMiddleware, ...)     // crear
+app.put('/api/servicios/:id', authMiddleware, ...)  // editar
+app.delete('/api/servicios/:id', authMiddleware, ...) // eliminar
+```
+Con validación de campos (`validarServicio`: título, descripción, duración, precio numérico `$25.000`) y control del índice único `titulo` (duplicado → `400`). `GET /api/servicios` ahora devuelve `tiene_imagen` en lugar de los bytes de imagen.
+
+> 🎤 **Argumento para la mesa:** "El catálogo de servicios ahora se administra desde el panel con el mismo token JWT del login. Crear, editar o eliminar un servicio es una operación autenticada y validada en el servidor, y se refleja de inmediato en la página Servicios y en el formulario de reserva."
+
+---
+
+## 1️⃣1️⃣ Subida de imágenes con validación (servicios y galería)
+
+### Problemática
+Las imágenes llegaban estáticas (PNGs locales en `src/assets`) o como base de datos sin control del tamaño/formato.
+
+### Solución
+Función compartida de validación de imágenes (base64 en el body JSON):
+```js
+const MIMES_VALIDOS = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const TAMANIO_MAX_IMAGEN = 6 * 1024 * 1024 // 6 MB
+
+function validarImagen(data, mime) {
+  if (!MIMES_VALIDOS.has(mime)) return { error: 'Formato no permitido (solo JPG, PNG o WebP)' }
+  const base64 = String(data || '').replace(/^data:[^;]+;base64,/, '')
+  const bytes = Buffer.byteLength(base64, 'base64')
+  if (!base64) return { error: 'La imagen está vacía' }
+  if (bytes > TAMANIO_MAX_IMAGEN) return { error: 'La imagen no puede superar los 6 MB' }
+  return { base64, bytes }
+}
+```
+- `POST /api/servicios/:id/imagen` → guarda o reemplaza la foto del servicio; `DELETE` la borra.
+- `POST /api/galeria` → guarda una foto de galería en `galeria_fotos`.
+- `GET .../imagen` públicos: sirven el archivo con su `Content-Type` real y `Cache-Control`.
+- El frontend *también* valida antes de enviar (mismo whitelist y tope), pero la **regla de seguridad vive en el servidor**.
+
+> 🎤 **Argumento para la mesa:** "Las imágenes se validan dos veces: en el cliente para dar feedback inmediato y en el servidor para que nadie pueda subir un archivo de otro tipo o de tamaño excesivo. Solo aceptamos JPG, PNG y WebP de hasta 6 MB."
+
+---
+
+## 1️⃣2️⃣ Body JSON con más capacidad (`15mb`)
+
+### Problemática
+`express.json()` sin opciones limita el body a ~100 KB → un upload de foto (base64) fallaba con `413 Payload Too Large`.
+
+### Solución
+```js
+app.use(express.json({ limit: '15mb' }))
+```
+Alcanza para varias fotos por request sin recurrir a `multer`/`busboy` ni multipart.
+
+> 🎤 **Argumento para la mesa:** "Elegí transportar las imágenes como base64 dentro del JSON para no agregar dependencias al proyecto: el límite del body se subió a 15 MB. Para el volumen de una galería de estudio es suficiente y simplifica el deploy."
+
+---
+
+# 🗄️ MEJORAS EN LA BASE DE DATOS
+
+> La base de datos da soporte a: catálogo de servicios, reservas cobradas y **galería con fotos almacenadas**.
+
+## 📋 Resumen
+
+| # | Mejora | Impacto |
+| :--- | :--- | :--- |
+| 1 | PostgreSQL en Render (plan free) | Datos persistentes, no solo en local |
+| 2 | Tabla `galeria_fotos` con fotos en `BYTEA` | Las imágenes "viven" en la base |
+| 3 | Columnas `imagen` y `imagen_mime` en `servicios` | Foto propia por servicio |
+| 4 | Creación automática de tablas al arrancar (`inicializarDB`) | Sin migraciones manuales |
+| 5 | Índice por colección e índice único de títulos | Consultas rápidas y sin duplicados |
+
+Archivos tocados:
+- `server/index.js` (queries, endpoints y `inicializarDB`)
+- `render.yaml` (env `DATABASE_URL` obligatoria, `sync: false`)
+- `server/.env` (local, gitignored) + `server/.env.example`
+
+## 1️⃣ Crear la base en Render (1 vez)
+
+1. **dashboard.render.com → New → PostgreSQL** (plan free, mismo comando).
+2. Copiar el **Internal Connection String** (así se usa dentro de la red de Render).
+3. En el Web Service → **Environment** → pegar ese valor en `DATABASE_URL` (+ `JWT_SECRET`, `ADMIN_USER`, `ADMIN_PASS`).
+4. **Manual Deploy** → el backend crea las tablas solo al arrancar.
+
+> ⚠️ El archivo `server/.env` es **solo local** (está gitignoreado): Render no lo lee, los valores van en el Dashboard.
+
+## 2️⃣ Tabla `galeria_fotos` (fotos en la base)
+
+```sql
+CREATE TABLE IF NOT EXISTS galeria_fotos (
+  id SERIAL PRIMARY KEY,
+  coleccion VARCHAR(50) NOT NULL,
+  nombre_archivo VARCHAR(150),
+  mime VARCHAR(50) NOT NULL,
+  bytes BYTEA NOT NULL,
+  creada_en TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_galeria_coleccion ON galeria_fotos (coleccion);
+```
+- La foto se guarda **como binario (`BYTEA`)** junto con su `mime` → se puede servir tal cual con el `Content-Type` correcto.
+- `GET /api/galeria` devuelve el listado **sin los bytes** (metadata), y `GET /api/galeria/:id/imagen` sirve el binario.
+
+> 🎤 **Argumento para la mesa:** "Guardamos las fotos como `BYTEA` dentro de PostgreSQL: la base es la única fuente de verdad y no dependemos de un servicio externo de archivos. El listado no trae los binarios, se piden por separado con su propia URL de imagen."
+
+## 3️⃣ Foto por servicio (`imagen`, `imagen_mime`)
+
+```sql
+ALTER TABLE servicios ADD COLUMN IF NOT EXISTS imagen BYTEA;
+ALTER TABLE servicios ADD COLUMN IF NOT EXISTS imagen_mime VARCHAR(50);
+```
+Si el servicio tiene imagen en la base, el frontend la muestra; si no, usa la PNG local.
+
+## 4️⃣ Auto-creación de esquema
+
+`inicializarDB()` (en `server/index.js`) ejecuta `CREATE TABLE IF NOT EXISTS` y `ALTER ... ADD COLUMN IF NOT EXISTS` al arrancar: **no hay que correr migraciones a mano**. También siembra los 5 servicios del catálogo (`ON CONFLICT DO NOTHING`).
+
+> 🎤 **Argumento para la mesa:** "El esquema se autogestiona: al desplegar por primera vez, el servidor crea las tablas y siembra el catálogo inicial. Las columnas nuevas se agregan de forma idempotente, así un deploy sobre una base existente no rompe nada."
+
+## 🎤 Preguntas que te pueden hacer (base de datos)
+
+- **¿Por qué `BYTEA` y no Cloudinary/S3?** Porque el TP pide datos en base de datos; así todo queda en un solo lugar y sin cuentas extra. Para una galería de ~100 fotos de <6 MB es más que suficiente.
+- **¿Y si la foto es de 5 MB devlo de base?** Se recomienda optimizarla antes de subir (el panel muestra el tope de 6 MB por archivo).
+- **¿La API sigue viva si la base no responde?** No: es un estado deliberado; los endpoints devuelven `500` y el log lo registra.
+
+---
+
 # 🎨 MEJORAS EN EL FRONTEND
 
 ## 📋 Resumen
@@ -264,11 +398,14 @@ Dejé un **blueprint** en la raíz del repo (`render.yaml`). Crea la API con los
 | UX | Mapa de ubicación embebido | Contexto local |
 | UX | Animaciones suaves al scroll (`Reveal`) | Toque profesional (accesible) |
 | PWA | Manifest + Service Worker + iconos | Instalable y offline (meta del TP) |
+| Panel | Admin con 3 pestañas: Reservas, Servicios y Galería | Gestiona reservas, catálogo y fotos |
+| Datos | Servicios y galería desde la API con fallback offline | Refleja los cambios del panel al instante |
 
 Archivos tocados/creados:
+- `src/lib/api.js` (base de la API + helpers de imágenes)
 - `src/components/SEO.jsx`, `src/components/{WhatsAppButton,GaleriaSesiones,Testimonios,Faq,Reveal}.jsx`, `src/components/galeriaData.js`
 - `src/assets/galeria/` (60 fotos reales, 10 por colección, optimizadas a 1024 px)
-- `src/pages/Home.jsx`, `src/pages/Servicios.jsx`, `src/pages/Admin.jsx`, `src/pages/NotFound.jsx`
+- `src/pages/Home.jsx`, `src/pages/Servicios.jsx`, `src/pages/Reservar.jsx`, `src/pages/Admin.jsx`, `src/pages/NotFound.jsx`
 - `src/App.jsx`, `src/main.jsx`, `src/components/Footer.jsx`
 - `index.html`, `public/manifest.webmanifest`, `public/sw.js`, `public/robots.txt`, `public/sitemap.xml`, `vercel.json`
 
@@ -349,7 +486,9 @@ Componente `GaleriaSesiones.jsx` (reemplaza a `Galeria.jsx`), inspirado en el si
 
 **Datos:** `galeriaData.js` define 6 colecciones (**Bebés, Paisajes, Bodas, Infantiles, Embarazo, Bautismos**) con **10 fotos reales cada una** bajadas del CDN de las galerías Pixieset del estudio e **optimizadas a 1024 px** (redimensionado + JPEG calidad 82) en `src/assets/galeria/<coleccion>/`.
 
-> 📥 **Cómo agregar más fotos:** copiás la imagen en `src/assets/galeria/COLECCION/`, la importás en `galeriaData.js` y la sumás al array `fotos` de esa colección. La grilla, el contador y el lightbox la incorporan automáticamente.
+**Y además:** la galería se **fusiona con la base de datos**. Al montar se consulta `GET /api/galeria`; las fotos subidas desde el panel se agregan a su colección (se muestran después de las locales) y las **colecciones nuevas creadas en el panel aparecen como cards nuevas** en la grilla. Si la API no responde, queda la galería local como fallback.
+
+> 📥 **Cómo agregar más fotos:** copiás la imagen en `src/assets/galeria/COLECCION/`, la importás en `galeriaData.js` y la sumás al array `fotos` de esa colección. La grilla, el contador y el lightbox la incorporan automáticamente. (Las fotos **desde el panel** no necesitan código: se suben a la base y ya aparecen.)
 
 > 🎤 **Argumento para la mesa:** "La galería replica la experiencia de un sitio de entregas de fotos (Pixieset): la clienta entra a su tipo de sesión y navega todas sus fotos en pantalla completa. Todo es accesible por clic y teclado, con lazy loading en cada imagen y sin cargar librerías externas: el visor (lightbox) es un componente propio."
 
@@ -368,6 +507,23 @@ Componente `Reveal.jsx`: usa `IntersectionObserver` para animar (fade + slide up
 - **Accesible:** si el usuario tiene `prefers-reduced-motion: reduce`, la animación se desactiva y el contenido se muestra directo.
 
 > 🎤 **Argumento para la mesa:** "Las animaciones de entrada las hago con `IntersectionObserver` en lugar de librerías: detecto cuándo un elemento entra al viewport y aplico una transición de opacidad y desplazamiento con CSS. Además respeto la preferencia del usuario: con `prefers-reduced-motion` el contenido aparece sin animación."
+
+### 7. Panel Admin en 3 pestañas (Reservas · Servicios · Galería)
+
+El Admin pasa de ser una sola tabla de reservas a un panel con pestañas:
+
+- **Reservas:** KPIs, cobros, borrar y alta manual (todo como estaba).
+- **Servicios:** listado con miniatura, **crear, editar y eliminar** servicios con modal y **subir/cambiar la imagen** de cada uno (FileReader → base64 → preview → `POST /api/servicios/:id/imagen`).
+- **Galería:** selector de colección (las 6 fijas + las creadas desde el panel + casilla "colección nueva"), subida **múltiple** de fotos con preview y borrado de cada una (thumbnails desde `GET /api/galeria/:id/imagen`).
+
+> 🎤 **Argumento para la mesa:** "El panel quedó como una mini-CMS: el dueño del estudio gestiona sus reservas, los servicios con su foto y la galería de fotos sin tocar código. Cada acción usa el token JWT del login y el servidor valida todo de nuevo."
+
+### 8. Servicios y galería leídos de la API (con fallback offline)
+
+- `Servicios.jsx` y `Reservar.jsx` dejaron de mostrar un array hardcodeado: al montar consultan `GET /api/servicios`. Si el servicio tiene imagen en la base se muestra esa; si no, la PNG local.
+- **Fallback:** si la API no responde (por ejemplo en la demo local sin red, o tras el cold start de Render), se usa el array estático → el sitio nunca queda en blanco.
+
+> 🎤 **Argumento para la mesa:** "El frontend consume la API pero no depende de ella para sobrevivir: hay un fallback con los datos por defecto. Así la demo funciona siempre, pero cuando la API está online los cambios del panel se reflejan al instante."
 
 ---
 

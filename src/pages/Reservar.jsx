@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
+import { obtenerRecurso } from '../lib/api'
 import { CalendarDays, Clock, User, Mail, Phone, MessageSquare, Check, ArrowLeft, ArrowRight } from 'lucide-react'
 
-const servicios = [
+const serviciosFijos = [
   {
     id: 1,
     titulo: 'Sesiones de Eventos',
@@ -71,6 +72,26 @@ function Reservar() {
   const [enviado, setEnviado] = useState(false)
   const [errores, setErrores] = useState({})
   const [cargando, setCargando] = useState(false)
+  const [servicios, setServicios] = useState(serviciosFijos)
+
+  useEffect(() => {
+    let activo = true
+    obtenerRecurso('/servicios').then((lista) => {
+      if (!activo || !Array.isArray(lista) || lista.length === 0) return
+      setServicios(
+        lista.map(({ id, titulo, descripcion, duracion, precio }) => ({
+          id,
+          titulo,
+          descripcion,
+          duracion,
+          precio,
+        }))
+      )
+    })
+    return () => {
+      activo = false
+    }
+  }, [])
 
   const SEOContent = (
     <SEO

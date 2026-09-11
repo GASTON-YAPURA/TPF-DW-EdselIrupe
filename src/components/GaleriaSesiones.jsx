@@ -1,12 +1,46 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { coleccionesGaleria } from './galeriaData'
+import { obtenerRecurso, urlImagenGaleria } from '../lib/api'
 
 function GaleriaSesiones() {
   const [coleccion, setColeccion] = useState(null)
   const [indice, setIndice] = useState(null)
+  const [fotosDb, setFotosDb] = useState([])
   const cerrarColeccion = useRef(null)
   const cerrarVisor = useRef(null)
+
+  useEffect(() => {
+    let activo = true
+    obtenerRecurso('/galeria').then((data) => {
+      if (activo && data && Array.isArray(data.fotos)) setFotosDb(data.fotos)
+    })
+    return () => {
+      activo = false
+    }
+  }, [])
+
+  const colecciones = useMemo(() => {
+    const porGrupo = {}
+    for (const f of fotosDb) {
+      if (!porGrupo[f.coleccion]) porGrupo[f.coleccion] = []
+      porGrupo[f.coleccion].push(f)
+    }
+    const estaticas = coleccionesGaleria.map((col) => ({
+      ...col,
+      fotos: [...col.fotos, ...(porGrupo[col.id] || []).map((f) => urlImagenGaleria(f.id))],
+    }))
+    const idsEstaticas = new Set(coleccionesGaleria.map((c) => c.id))
+    const nuevas = Object.entries(porGrupo)
+      .filter(([nombre]) => !idsEstaticas.has(nombre))
+      .map(([nombre, fotos]) => ({
+        id: nombre,
+        titulo: nombre.charAt(0).toUpperCase() + nombre.slice(1),
+        portada: urlImagenGaleria(fotos[0].id),
+        fotos: fotos.map((f) => urlImagenGaleria(f.id)),
+      }))
+    return [...estaticas, ...nuevas]
+  }, [fotosDb])
 
   useEffect(() => {
     if (!coleccion) return
@@ -45,7 +79,7 @@ function GaleriaSesiones() {
       </h2>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {coleccionesGaleria.map((col) => (
+        {colecciones.map((col) => (
           <button
             key={col.id}
             onClick={() => {

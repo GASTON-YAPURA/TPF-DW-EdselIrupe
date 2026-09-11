@@ -1,14 +1,25 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
 import Reveal from '../components/Reveal'
+import { obtenerRecurso, urlImagenServicio } from '../lib/api'
 import eventos from '../assets/eventos.png'
 import particulares from '../assets/particulares.png'
 import tematica from '../assets/temática.png'
 import infantil from '../assets/infantil.png'
 import grupales from '../assets/individuales y grupales.png'
 
-const servicios = [
+// Imágenes locales por defecto (fallback si el servicio no tiene imagen en la base).
+const imagenesLocales = {
+  'Sesiones de Eventos': eventos,
+  'Sesiones Particulares': particulares,
+  'Sesiones Temáticas': tematica,
+  'Sesiones Infantiles': infantil,
+  'Sesiones Individuales y Grupales': grupales,
+}
+
+const serviciosFijos = [
   {
     id: 1,
     titulo: 'Sesiones de Eventos',
@@ -53,6 +64,25 @@ const servicios = [
 
 function Servicios() {
   const navigate = useNavigate()
+  const [servicios, setServicios] = useState(serviciosFijos)
+
+  useEffect(() => {
+    let activo = true
+    obtenerRecurso('/servicios').then((lista) => {
+      if (!activo || !Array.isArray(lista) || lista.length === 0) return
+      setServicios(
+        lista.map((s) => ({
+          ...s,
+          imagen: s.tiene_imagen
+            ? urlImagenServicio(s.id)
+            : imagenesLocales[s.titulo] || eventos,
+        }))
+      )
+    })
+    return () => {
+      activo = false
+    }
+  }, [])
 
   return (
     <>
