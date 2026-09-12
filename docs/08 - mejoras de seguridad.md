@@ -513,7 +513,7 @@ Componente `Reveal.jsx`: usa `IntersectionObserver` para animar (fade + slide up
 El Admin pasa de ser una sola tabla de reservas a un panel con pestañas:
 
 - **Reservas:** KPIs, cobros, borrar y alta manual (todo como estaba).
-- **Servicios:** listado con miniatura, **crear, editar y eliminar** servicios con modal y **subir/cambiar la imagen** de cada uno (FileReader → base64 → preview → `POST /api/servicios/:id/imagen`).
+- **Servicios:** listado con miniatura, **crear, editar y eliminar** servicios con modal y **subir/cambiar la imagen** de cada uno (FileReader → base64 → preview → `POST /api/servicios/:id/imagen`). Al editar se muestra la imagen actual y se puede **quitar la foto de portada** con el botón "Quitar foto" (con confirmación; `DELETE /api/servicios/:id/imagen`): el servicio vuelve a usar la imagen del diseño.
 - **Galería:** selector de colección (las 6 fijas + las creadas desde el panel + casilla "colección nueva"), subida **múltiple** de fotos con preview y borrado de cada una (thumbnails desde `GET /api/galeria/:id/imagen`). Al seleccionar una colección se muestran **las fotos del sitio (base), con etiqueta "Base del sitio" y sin botón eliminar** (son parte del diseño y viven en el código), seguidas de **las subidas desde el panel, con botón eliminar**.
 
 > 🎤 **Argumento para la mesa:** "El panel quedó como una mini-CMS: el dueño del estudio gestiona sus reservas, los servicios con su foto y la galería de fotos sin tocar código. Cada acción usa el token JWT del login y el servidor valida todo de nuevo."

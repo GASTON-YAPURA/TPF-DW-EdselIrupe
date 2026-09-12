@@ -314,3 +314,11 @@ https://tpf-dw-edsel-irupe.vercel.app/
  57. Docs:
          - docs/08: sección 8 (servicios desde API) actualizada
          - changelog COMMIT E9-B
+
+## COMMIT E10: QUITAR FOTO DE PORTADA EN EL PANEL (SERVICIOS)
+ 58. Admin.jsx - Pestaña Servicios:
+         - Al editar un servicio con imagen, el modal muestra la imagen actual y debajo
+           el botón "Quitar foto" (con confirmación) que llama a DELETE /api/servicios/:id/imagen
+         - Al quitarla, el servicio vuelve a la imagen del diseño y se actualiza la lista al instante
+ 59. Docs:
+         - changelog COMMIT E10
