@@ -236,6 +236,19 @@ function Admin() {
     } catch { setError('Error al eliminar servicio') }
   }
 
+  async function quitarImagenServicio(id) {
+    if (!window.confirm('¿Quitar la foto de portada de este servicio? Se volverá a usar la imagen del diseño.')) return
+    try {
+      const res = await fetch(`${API_URL}/servicios/${id}/imagen`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) { setError('Error al quitar la foto'); return }
+      setImagenServicio(null)
+      await cargarDatos(token)
+    } catch { setError('Error de conexión') }
+  }
+
   // --- Galería ---
   function manejarArchivosGaleria(files) {
     setError('')
@@ -817,7 +830,13 @@ function Admin() {
                     {imagenServicio ? (
                       <img src={imagenServicio.preview} alt="Nueva imagen" className="w-20 h-20 rounded-md object-cover border border-[#E5E5E5]" />
                     ) : modalServicio.id && servicios.find((s) => s.id === modalServicio.id)?.tiene_imagen ? (
-                      <img src={urlImagenServicio(modalServicio.id)} alt="Imagen actual" className="w-20 h-20 rounded-md object-cover border border-[#E5E5E5]" />
+                      <div className="flex flex-col items-center gap-2">
+                        <img src={urlImagenServicio(modalServicio.id)} alt="Imagen actual" className="w-20 h-20 rounded-md object-cover border border-[#E5E5E5]" />
+                        <button type="button" onClick={() => quitarImagenServicio(modalServicio.id)}
+                          className="flex items-center gap-1 text-xs font-semibold text-[#C1121F] hover:underline cursor-pointer">
+                          <Trash2 size={14} /> Quitar foto
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                 </div>
