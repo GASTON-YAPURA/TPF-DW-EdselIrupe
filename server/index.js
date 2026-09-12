@@ -323,7 +323,7 @@ app.get('/api/servicios/:id/imagen', async (req, res) => {
       return res.status(404).json({ error: 'Imagen no disponible' })
     }
     res.set('Content-Type', result.rows[0].imagen_mime)
-    res.set('Cache-Control', 'public, max-age=3600')
+    res.set('Cache-Control', 'public, max-age=60')
     res.send(result.rows[0].imagen)
   } catch (err) {
     console.error('Error al obtener imagen de servicio:', err)
@@ -391,7 +391,7 @@ app.get('/api/galeria/:id/imagen', async (req, res) => {
       return res.status(404).json({ error: 'Foto no encontrada' })
     }
     res.set('Content-Type', result.rows[0].mime)
-    res.set('Cache-Control', 'public, max-age=3600')
+    res.set('Cache-Control', 'public, max-age=60')
     res.send(result.rows[0].bytes)
   } catch (err) {
     console.error('Error al obtener foto de galería:', err)

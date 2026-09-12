@@ -520,7 +520,7 @@ El Admin pasa de ser una sola tabla de reservas a un panel con pestañas:
 
 ### 8. Servicios y galería leídos de la API (con fallback offline)
 
-- `Servicios.jsx` y `Reservar.jsx` dejaron de mostrar un array hardcodeado: al montar consultan `GET /api/servicios`. Si el servicio tiene imagen en la base se muestra esa; si no, la PNG local.
+- `Servicios.jsx`, `Reservar.jsx` y la sección "Sesiones Más Pedidas" del `Home` consultan `GET /api/servicios`. Si el servicio tiene imagen en la base se muestra esa; si no, la PNG local. Las imágenes se sirven con `Cache-Control: public, max-age=60` para que una imagen cambiada desde el panel se vea de inmediato.
 - **Fallback:** si la API no responde (por ejemplo en la demo local sin red, o tras el cold start de Render), se usa el array estático → el sitio nunca queda en blanco.
 
 > 🎤 **Argumento para la mesa:** "El frontend consume la API pero no depende de ella para sobrevivir: hay un fallback con los datos por defecto. Así la demo funciona siempre, pero cuando la API está online los cambios del panel se reflejan al instante."

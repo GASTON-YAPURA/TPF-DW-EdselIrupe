@@ -8,6 +8,7 @@ import GaleriaSesiones from '../components/GaleriaSesiones'
 import Testimonios from '../components/Testimonios'
 import Faq from '../components/Faq'
 import { preguntasFaq } from '../components/faqData'
+import { obtenerRecurso, urlImagenServicio } from '../lib/api'
 import fondoMain from '../assets/fondo main.png'
 import eventos from '../assets/eventos.png'
 import particulares from '../assets/particulares.png'
@@ -77,6 +78,14 @@ const masPedidos = [
     imagen: eventos,
   },
 ]
+
+const imagenesLocales = {
+  'Sesiones de Eventos': eventos,
+  'Sesiones Particulares': particulares,
+  'Sesiones Temáticas': tematica,
+  'Sesiones Infantiles': infantil,
+  'Sesiones Individuales y Grupales': grupales,
+}
 
 function FilosofiaSlider() {
   const [actual, setActual] = useState(0)
@@ -255,6 +264,28 @@ function Home() {
 
 function SesionesMasPedidas() {
   const navigate = useNavigate()
+  const [items, setItems] = useState(masPedidos)
+
+  useEffect(() => {
+    let activo = true
+    obtenerRecurso('/servicios').then((lista) => {
+      if (!activo || !Array.isArray(lista) || lista.length === 0) return
+      setItems(
+        masPedidos.map((mp) => {
+          const api = lista.find((s) => s.titulo === mp.titulo)
+          if (!api) return mp
+          return {
+            ...mp,
+            descripcion: api.descripcion || mp.descripcion,
+            imagen: api.tiene_imagen ? urlImagenServicio(api.id) : imagenesLocales[api.titulo] || mp.imagen,
+          }
+        })
+      )
+    })
+    return () => {
+      activo = false
+    }
+  }, [])
 
   return (
     <section className="px-4 py-16 md:py-24 max-w-6xl mx-auto">
@@ -263,7 +294,7 @@ function SesionesMasPedidas() {
         <span className="text-[#C1121F]">Más Pedidas</span>
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {masPedidos.map((s) => (
+        {items.map((s) => (
           <div
             key={s.titulo}
             className="rounded-lg overflow-hidden shadow-md bg-[#FEFEFE] border border-[#E5E5E5]"

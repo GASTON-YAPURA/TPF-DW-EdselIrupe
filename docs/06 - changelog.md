@@ -301,3 +301,16 @@ https://tpf-dw-edsel-irupe.vercel.app/
  54. Docs:
          - docs/08: pestaña Galería (sección 7 del frontend) actualizada
          - changelog COMMIT E9
+
+## COMMIT E9-B: FIX IMAGEN DE SERVICIO NO VISIBLE
+ 55. Home.jsx:
+         - "Sesiones Más Pedidas" ahora lee la API: si un servicio tiene imagen en la
+           base se muestra esa; si no, la local. Antes usaba datos estáticos
+           (imágenes y precios del código), por eso el cambio hecho en el panel no
+           aparecía en esa sección
+ 56. server/index.js:
+         - Cache-Control de imágenes (servicios y galería) de 1 hora a 60 segundos,
+           para que al cambiar una imagen se vea al instante y no quede "pegada" la vieja
+ 57. Docs:
+         - docs/08: sección 8 (servicios desde API) actualizada
+         - changelog COMMIT E9-B
