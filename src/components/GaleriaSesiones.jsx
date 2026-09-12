@@ -1,21 +1,19 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { coleccionesGaleria } from './galeriaData'
 import { obtenerRecurso, urlImagenGaleria } from '../lib/api'
 
 function GaleriaSesiones() {
   const [coleccion, setColeccion] = useState(null)
   const [indice, setIndice] = useState(null)
   const [fotosDb, setFotosDb] = useState([])
-  const [coleccionesDb, setColeccionesDb] = useState([])
   const cerrarColeccion = useRef(null)
   const cerrarVisor = useRef(null)
 
   useEffect(() => {
     let activo = true
     obtenerRecurso('/galeria').then((data) => {
-      if (!activo || !data) return
-      if (Array.isArray(data.fotos)) setFotosDb(data.fotos)
-      if (Array.isArray(data.colecciones)) setColeccionesDb(data.colecciones)
+      if (activo && data && Array.isArray(data.fotos)) setFotosDb(data.fotos)
     })
     return () => {
       activo = false
@@ -28,21 +26,21 @@ function GaleriaSesiones() {
       if (!porGrupo[f.coleccion]) porGrupo[f.coleccion] = []
       porGrupo[f.coleccion].push(f)
     }
-    return coleccionesDb
-      .map((col) => {
-        const fotos = (porGrupo[col.id] || [])
-          .sort((a, b) => (a.orden - b.orden) || (a.id - b.id))
-          .map((f) => urlImagenGaleria(f.id))
-        if (fotos.length === 0) return null
-        return {
-          id: col.id,
-          titulo: col.titulo,
-          portada: col.portada_foto_id ? urlImagenGaleria(col.portada_foto_id) : fotos[0],
-          fotos,
-        }
-      })
-      .filter(Boolean)
-  }, [fotosDb, coleccionesDb])
+    const estaticas = coleccionesGaleria.map((col) => ({
+      ...col,
+      fotos: [...col.fotos, ...(porGrupo[col.id] || []).map((f) => urlImagenGaleria(f.id))],
+    }))
+    const idsEstaticas = new Set(coleccionesGaleria.map((c) => c.id))
+    const nuevas = Object.entries(porGrupo)
+      .filter(([nombre]) => !idsEstaticas.has(nombre))
+      .map(([nombre, fotos]) => ({
+        id: nombre,
+        titulo: nombre.charAt(0).toUpperCase() + nombre.slice(1),
+        portada: urlImagenGaleria(fotos[0].id),
+        fotos: fotos.map((f) => urlImagenGaleria(f.id)),
+      }))
+    return [...estaticas, ...nuevas]
+  }, [fotosDb])
 
   useEffect(() => {
     if (!coleccion) return

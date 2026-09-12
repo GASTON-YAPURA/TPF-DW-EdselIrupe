@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
 import { API_URL, urlImagenServicio } from '../lib/api'
+import { coleccionesGaleria } from '../components/galeriaData'
 import {
   LogIn, LogOut, Lock, Plus, Trash2, DollarSign, BarChart3, TrendingUp, AlertCircle,
-  X, Loader2, Pencil, Upload, Images, Briefcase, CalendarRange, Image as ImageIcon, Star,
+  X, Loader2, Pencil, Upload, Images, Briefcase, CalendarRange, Image as ImageIcon,
 } from 'lucide-react'
 
 const serviciosList = [
@@ -45,9 +46,8 @@ function Admin() {
   // Galería
   const [fotosDb, setFotosDb] = useState([])
   const [coleccionesDb, setColeccionesDb] = useState([])
-  const [coleccionSel, setColeccionSel] = useState('')
+  const [coleccionSel, setColeccionSel] = useState('bebes')
   const [nuevaColeccion, setNuevaColeccion] = useState('')
-  const [nombreColeccionNueva, setNombreColeccionNueva] = useState('')
   const [pending, setPending] = useState([])
   const [subiendo, setSubiendo] = useState(false)
 
@@ -272,23 +272,8 @@ function Admin() {
     })
   }
 
-  function slugificar(texto) {
-    return String(texto)
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 50)
-  }
-
-  const coleccionEfectiva = coleccionesDb.some((c) => c.id === coleccionSel)
-    ? coleccionSel
-    : coleccionesDb[0]?.id || ''
-
   function coleccionActual() {
-    const texto = (nuevaColeccion.trim() || coleccionEfectiva).trim().toLowerCase()
-    return texto && nuevaColeccion.trim() ? slugificar(texto) : texto
+    return (nuevaColeccion.trim() || coleccionSel).trim().toLowerCase()
   }
 
   async function subirFotos() {
@@ -324,74 +309,17 @@ function Admin() {
     } catch { setError('Error al eliminar la foto') }
   }
 
-  async function crearColeccion() {
-    const titulo = nombreColeccionNueva.trim()
-    if (!titulo) { setError('Escribí el nombre de la nueva colección'); return }
-    setError('')
-    try {
-      const res = await fetch(`${API_URL}/galeria/colecciones`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ titulo }),
-      })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Error al crear la colección'); return }
-      setNombreColeccionNueva('')
-      setNuevaColeccion('')
-      await cargarDatos(token)
-      setColeccionSel(data.id)
-    } catch { setError('Error de conexión') }
-  }
-
-  async function renombrarColeccion(col) {
-    const titulo = window.prompt('Nuevo nombre de la colección:', col.titulo)
-    if (!titulo) return
-    setError('')
-    try {
-      const res = await fetch(`${API_URL}/galeria/colecciones/${col.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ titulo }),
-      })
-      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || 'Error al renombrar'); return }
-      await cargarDatos(token)
-    } catch { setError('Error de conexión') }
-  }
-
-  async function eliminarColeccion(col) {
-    if (!window.confirm(`¿Eliminar la colección "${col.titulo}" y todas sus fotos?`)) return
-    setError('')
-    try {
-      const res = await fetch(`${API_URL}/galeria/colecciones/${col.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.ok) await cargarDatos(token)
-    } catch { setError('Error al eliminar la colección') }
-  }
-
-  async function usarComoPortada(fotoId) {
-    const col = coleccionesDb.find((c) => c.id === coleccionActual())
-    if (!col) return
-    try {
-      const res = await fetch(`${API_URL}/galeria/colecciones/${col.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ portada_foto_id: fotoId }),
-      })
-      if (res.ok) await cargarDatos(token)
-    } catch { setError('Error al cambiar la portada') }
-  }
-
-  const opcionesColecciones = coleccionesDb
-  const colActualObj = coleccionesDb.find((c) => c.id === coleccionActual()) || null
-  const portadaDeEsta = colActualObj?.portada_foto_id || null
+  const idsFijos = new Set(coleccionesGaleria.map((c) => c.id))
+  const opcionesColecciones = [
+    ...coleccionesGaleria.map((c) => c.id),
+    ...coleccionesDb.filter((c) => !idsFijos.has(c)),
+  ]
   const fotoPrevia = (f) => `${API_URL}/galeria/${f.id}/imagen`
   const fotosDeEsta = coleccionActual()
-    ? fotosDb
-        .filter((f) => f.coleccion === coleccionActual())
-        .sort((a, b) => (a.orden - b.orden) || (a.id - b.id))
+    ? fotosDb.filter((f) => f.coleccion === coleccionActual())
     : fotosDb
+  const coleccionSelObj = coleccionesGaleria.find((c) => c.id === coleccionActual())
+  const fotosLocales = coleccionSelObj?.fotos || []
 
   if (!logueado && !token) {
     return (
@@ -636,20 +564,21 @@ function Admin() {
           {tab === 'galeria' && (
             <div className="space-y-6">
               <div className="bg-[#FEFEFE] rounded-lg shadow-sm p-6">
-                <h2 className="text-2xl font-bold text-[#373435] mb-2">Galería de fotos</h2>
+                <h2 className="text-2xl font-bold text-[#373435] mb-2">Subir fotos a la galería</h2>
                 <p className="text-sm text-[#373435] opacity-60 mb-6">
-                  Todas las fotos se guardan en la base de datos y aparecen automáticamente en el Home dentro de su colección.
-                  Puedés subir fotos, eliminarlas, elegir la portada de cada colección y crear, renombrar o borrar colecciones. Máximo 6 MB por foto (JPG, PNG o WebP).
+                  Las fotos se guardan en la base de datos y aparecen automáticamente en el Home, dentro de su colección. Máximo 6 MB por foto (JPG, PNG o WebP).
+                  Las fotos originales del sitio están marcadas como "Base del sitio": son parte del diseño y no se eliminan desde el panel.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-semibold text-[#373435] mb-1">Colección</label>
-                    <select value={coleccionEfectiva} onChange={(e) => { setColeccionSel(e.target.value); setNuevaColeccion('') }}
+                    <select value={coleccionSel} onChange={(e) => { setColeccionSel(e.target.value); setNuevaColeccion('') }}
                       className="w-full border border-[#E5E5E5] rounded-md px-4 py-3 bg-[#FEFEFE] focus:outline-none focus:ring-2 focus:ring-[#C1121F]">
-                      {opcionesColecciones.length === 0 && <option value="">Sin colecciones</option>}
                       {opcionesColecciones.map((c) => (
-                        <option key={c.id} value={c.id}>{c.titulo}</option>
+                        <option key={c} value={c}>
+                          {coleccionesGaleria.find((x) => x.id === c)?.titulo || c}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -689,39 +618,6 @@ function Admin() {
                     </button>
                   </div>
                 )}
-
-                <div className="mt-6 border-t border-[#E5E5E5] pt-4">
-                  <p className="text-sm font-semibold text-[#373435] mb-2">Colecciones</p>
-                  <div className="space-y-2">
-                    {opcionesColecciones.map((c) => (
-                      <div key={c.id} className="flex items-center justify-between gap-3 bg-[#F5F1EC] rounded-md px-3 py-2">
-                        <div className="min-w-0">
-                          <p className="font-semibold text-[#373435] truncate">{c.titulo}</p>
-                          <p className="text-xs text-[#373435] opacity-60">{fotosDb.filter((f) => f.coleccion === c.id).length} fotos</p>
-                        </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <button onClick={() => renombrarColeccion(c)} title="Renombrar"
-                            className="p-2 rounded text-[#373435] hover:bg-[#FEFEFE] transition-colors cursor-pointer">
-                            <Pencil size={14} />
-                          </button>
-                          <button onClick={() => eliminarColeccion(c)} title="Eliminar colección y sus fotos"
-                            className="p-2 rounded text-[#373435] hover:bg-red-100 hover:text-[#C1121F] transition-colors cursor-pointer">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="flex gap-2">
-                      <input type="text" value={nombreColeccionNueva} onChange={(e) => { setNombreColeccionNueva(e.target.value); setError('') }}
-                        placeholder="Nombre de la nueva colección"
-                        className="flex-1 border border-[#E5E5E5] rounded-md px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#C1121F]" />
-                      <button onClick={crearColeccion}
-                        className="flex items-center gap-1 bg-[#373435] text-[#FEFEFE] px-4 py-2.5 rounded-md font-semibold hover:bg-[#C1121F] transition-colors cursor-pointer">
-                        <Plus size={16} /> Crear
-                      </button>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {cargandoDatos ? (
@@ -731,44 +627,58 @@ function Admin() {
               ) : (
                 <div className="bg-[#FEFEFE] rounded-lg shadow-sm p-6">
                   <h3 className="text-lg font-bold text-[#373435] mb-1">
-                    Fotos en "{colActualObj?.titulo || coleccionActual()}"
+                    Fotos en "{coleccionActual()}"
                   </h3>
                   <p className="text-sm text-[#373435] opacity-60 mb-4">
-                    {fotosDeEsta.length} foto(s) · la foto con la estrella es la portada de la colección
+                    {fotosLocales.length + fotosDeEsta.length} foto(s) en total · {fotosLocales.length} del sitio + {fotosDeEsta.length} subida(s)
                   </p>
 
-                  {fotosDeEsta.length === 0 ? (
+                  {fotosLocales.length === 0 && fotosDeEsta.length === 0 ? (
                     <div className="text-center py-16">
                       <p className="text-lg text-[#373435] opacity-60">
-                        {coleccionActual() ? `La colección "${colActualObj?.titulo || coleccionActual()}" no tiene fotos todavía. Subilas arriba.` : 'Elegí una colección para ver sus fotos'}
+                        {coleccionActual() ? `La colección "${coleccionActual()}" no tiene fotos todavía` : 'Elegí una colección para ver sus fotos'}
                       </p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                      {fotosDeEsta.map((f) => {
-                        const esPortada = portadaDeEsta === f.id
-                        return (
-                          <div key={f.id} className="relative group rounded-md overflow-hidden">
-                            <img src={fotoPrevia(f)} alt={f.nombre_archivo || 'foto'} loading="lazy" className="w-full h-32 md:h-40 object-cover" />
-                            {esPortada && (
-                              <span className="absolute top-2 left-2 bg-[#C1121F] text-white text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
-                                <Star size={12} /> Portada
-                              </span>
-                            )}
-                            <button onClick={() => eliminarFoto(f.id)}
-                              className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5 cursor-pointer opacity-0 group-hover:opacity-100 hover:bg-[#C1121F] transition-opacity" title="Eliminar foto">
-                              <Trash2 size={14} />
-                            </button>
-                            <button onClick={() => usarComoPortada(f.id)}
-                              className={`absolute bottom-2 left-2 rounded-full p-1.5 cursor-pointer transition-colors ${esPortada ? 'bg-[#C1121F] text-white' : 'bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:bg-[#C1121F]'}`}
-                              title="Usar como portada de la colección"
-                              aria-label="Usar como portada">
-                              <Star size={14} />
-                            </button>
+                    <>
+                      {fotosLocales.length > 0 && (
+                        <div className="mb-6">
+                          <p className="text-sm font-semibold text-[#373435] opacity-70 mb-2">Fotos del sitio (base)</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            {fotosLocales.map((src, i) => (
+                              <div key={i} className="relative group rounded-md overflow-hidden">
+                                <img src={src} alt={`${coleccionActual()} - base ${i + 1}`} className="w-full h-32 md:h-40 object-cover" />
+                                <span
+                                  className="absolute bottom-2 left-2 bg-[#373435]/80 text-white text-xs font-semibold px-2 py-1 rounded"
+                                  title="Foto del diseño original del sitio: se edita en el código, no desde el panel"
+                                >
+                                  Base del sitio
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                        )
-                      })}
-                    </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <p className="text-sm font-semibold text-[#373435] opacity-70 mb-2">Fotos subidas desde el panel</p>
+                        {fotosDeEsta.length === 0 ? (
+                          <p className="text-sm text-[#373435] opacity-60">No hay fotos subidas a esta colección todavía.</p>
+                        ) : (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            {fotosDeEsta.map((f) => (
+                              <div key={f.id} className="relative group rounded-md overflow-hidden">
+                                <img src={fotoPrevia(f)} alt={f.nombre_archivo || 'foto'} loading="lazy" className="w-full h-32 md:h-40 object-cover" />
+                                <button onClick={() => eliminarFoto(f.id)}
+                                  className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5 cursor-pointer opacity-0 group-hover:opacity-100 hover:bg-[#C1121F] transition-opacity" title="Eliminar foto">
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               )}

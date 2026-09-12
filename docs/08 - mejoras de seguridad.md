@@ -399,7 +399,7 @@ Si el servicio tiene imagen en la base, el frontend la muestra; si no, usa la PN
 | UX | Animaciones suaves al scroll (`Reveal`) | Toque profesional (accesible) |
 | PWA | Manifest + Service Worker + iconos | Instalable y offline (meta del TP) |
 | Panel | Admin con 3 pestañas: Reservas, Servicios y Galería | Gestiona reservas, catálogo y fotos |
-| Datos | Servicios desde la API con fallback offline; galería 100 % desde la base de datos | Refleja los cambios del panel al instante |
+| Datos | Servicios y galería desde la API con fallback offline | Refleja los cambios del panel al instante |
 
 Archivos tocados/creados:
 - `src/lib/api.js` (base de la API + helpers de imágenes)
@@ -484,13 +484,13 @@ Componente `GaleriaSesiones.jsx` (reemplaza a `Galeria.jsx`), inspirado en el si
 - **Click en una colección → galería a pantalla completa**: overlay oscuro (`z-[60]`, sobre el header) con el título, contador y una grilla scrollable de las fotos de esa sesión.
 - **Click en una foto → lightbox**: imagen grande, flechas prev/next, contador de posición, cierre con `X` o `Escape`, navegación por teclado (`←`/`→`), bloqueo del scroll de fondo, `role="dialog"` + `aria-modal` y foco gestionado (el `Escape` cierra primero el visor y luego la colección).
 
-**Datos:** las 60 fotos originales del sitio (6 colecciones: **Bebés, Paisajes, Bodas, Infantiles, Embarazo, Bautismos**, 10 fotos reales cada una bajadas del CDN de las galerías Pixieset del estudio y **optimizadas a 1024 px**) se **migraron a la base de datos**. La galería se arma **completamente desde la API** (`GET /api/galeria`): colecciones, portadas y fotos.
+**Datos:** `galeriaData.js` define 6 colecciones (**Bebés, Paisajes, Bodas, Infantiles, Embarazo, Bautismos**) con **10 fotos reales cada una** bajadas del CDN de las galerías Pixieset del estudio e **optimizadas a 1024 px** (redimensionado + JPEG calidad 82) en `src/assets/galeria/<coleccion>/`.
 
-**Modelo de datos:** tabla `galeria_fotos` (con `orden` dentro de cada colección) + tabla `galeria_colecciones` (título y `portada_foto_id`, la foto que se ve en la card). El script `server/scripts/migrarGaleria.mjs` hizo la carga inicial de las 60 fotos y es **idempotente** (se puede volver a correr sin duplicar).
+**Y además:** la galería se **fusiona con la base de datos**. Al montar se consulta `GET /api/galeria`; las fotos subidas desde el panel se agregan a su colección (se muestran después de las locales) y las **colecciones nuevas creadas en el panel aparecen como cards nuevas** en la grilla. Si la API no responde, queda la galería local como fallback.
 
-> 📥 **Cómo se agregaban fotos antes:** copiando la imagen en `src/assets/galeria/COLECCION/` e importándola en `galeriaData.js`. Ese archivo y las carpetas quedaron en el repo solo como fuente de respaldo; la gestión ahora es **100 % desde el panel**: subir fotos, eliminarlas, elegir portada y crear/renombrar/eliminar colecciones.
+> 📥 **Cómo agregar más fotos:** copiás la imagen en `src/assets/galeria/COLECCION/`, la importás en `galeriaData.js` y la sumás al array `fotos` de esa colección. La grilla, el contador y el lightbox la incorporan automáticamente. (Las fotos **desde el panel** no necesitan código: se suben a la base y ya aparecen.)
 
-> 🎤 **Argumento para la mesa:** "La galería replica la experiencia de un sitio de entregas de fotos (Pixieset): la clienta entra a su tipo de sesión y navega todas sus fotos en pantalla completa. Todo es accesible por clic y teclado, con lazy loading en cada imagen y sin cargar librerías externas: el visor (lightbox) es un componente propio. Y como todas las fotos están en la base, el panel puede editarlas sin tocar código."
+> 🎤 **Argumento para la mesa:** "La galería replica la experiencia de un sitio de entregas de fotos (Pixieset): la clienta entra a su tipo de sesión y navega todas sus fotos en pantalla completa. Todo es accesible por clic y teclado, con lazy loading en cada imagen y sin cargar librerías externas: el visor (lightbox) es un componente propio."
 
 ### 3. Testimonios
 Componente `Testimonios.jsx`: 3 reseñas con estrellas (iconos `Star` de lucide) y nombre del cliente. Son ejemplos de demostración, listos para reemplazar por opiniones reales.
@@ -515,16 +515,16 @@ El Admin pasa de ser una sola tabla de reservas a un panel con pestañas:
 - **Reservas:** KPIs, cobros, borrar y alta manual (todo como estaba).
 - **Servicios:** listado con miniatura, **crear, editar y eliminar** servicios con modal y **subir/cambiar la imagen** de cada uno (FileReader → base64 → preview → `POST /api/servicios/:id/imagen`). Al editar se muestra la imagen actual y se puede **quitar la foto de portada** con el botón "Quitar foto" (con confirmación; `DELETE /api/servicios/:id/imagen`): el servicio vuelve a usar la imagen del diseño.
 - **Acceso rápido (solo dueños):** cuando hay sesión iniciada, la barra de navegación muestra el enlace **"👤 Panel Administrativo"** en un recuadro con borde `#C1121F`. Aparece en todas las páginas públicas (excepto en `/admin`) y permite volver al panel con un clic, sin usar la flecha del navegador. Se actualiza en cada navegación según el estado de sesión.
-- **Galería:** selector de colección + casilla "colección nueva", subida **múltiple** de fotos con preview y **borrado de cualquier foto**. Cada foto tiene el botón **"usar como portada"** (estrella ⭑; la portada actual lleva la insignia "Portada") que actualiza la card de la colección en el Home (`PUT /api/galeria/colecciones/:id`). Además, **gestión de colecciones** desde el panel: **crear, renombrar y eliminar** (eliminar borra también sus fotos). Todo se ve en el Home al instante porque las fotos viven en la base.
+- **Galería:** selector de colección (las 6 fijas + las creadas desde el panel + casilla "colección nueva"), subida **múltiple** de fotos con preview y borrado de cada una (thumbnails desde `GET /api/galeria/:id/imagen`). Al seleccionar una colección se muestran **las fotos del sitio (base), con etiqueta "Base del sitio" y sin botón eliminar** (son parte del diseño y viven en el código), seguidas de **las subidas desde el panel, con botón eliminar**.
 
 > 🎤 **Argumento para la mesa:** "El panel quedó como una mini-CMS: el dueño del estudio gestiona sus reservas, los servicios con su foto y la galería de fotos sin tocar código. Cada acción usa el token JWT del login y el servidor valida todo de nuevo."
 
-### 8. Servicios y galería leídos de la API
+### 8. Servicios y galería leídos de la API (con fallback offline)
 
-- `Servicios.jsx`, `Reservar.jsx` y la sección "Sesiones Más Pedidas" del `Home` consultan `GET /api/servicios`. Si el servicio tiene imagen en la base se muestra esa; si no, la PNG local. Las imágenes se sirven con `Cache-Control: public, max-age=60` para que una imagen cambiada desde el panel se vea de inmediato. Si la API no responde (demo local sin red o cold start de Render), se usa el array estático → el sitio nunca queda en blanco.
-- La **galería** se arma **100 % desde la API** (colecciones, portadas y fotos). Como todas las fotos viven en la base, cualquier cambio del panel (subir, eliminar, elegir portada, crear/renombrar/eliminar colecciones) se refleja al instante en el Home. No tiene copia local: por decisión de diseño el bundle no lleva las 60 fotos (los `~9 MB` de imágenes salieron del build).
+- `Servicios.jsx`, `Reservar.jsx` y la sección "Sesiones Más Pedidas" del `Home` consultan `GET /api/servicios`. Si el servicio tiene imagen en la base se muestra esa; si no, la PNG local. Las imágenes se sirven con `Cache-Control: public, max-age=60` para que una imagen cambiada desde el panel se vea de inmediato.
+- **Fallback:** si la API no responde (por ejemplo en la demo local sin red, o tras el cold start de Render), se usa el array estático → el sitio nunca queda en blanco.
 
-> 🎤 **Argumento para la mesa:** "Para Servicios y la reserva hay un fallback con los datos por defecto: si la API no responde, la demo local sigue funcionando. La Galería, en cambio, se nutre 100 % de la base de datos: es lo que permite que el dueño edite portadas, suba o borre fotos y cree colecciones desde el panel sin tocar código, y que se vea en el Home al instante."
+> 🎤 **Argumento para la mesa:** "El frontend consume la API pero no depende de ella para sobrevivir: hay un fallback con los datos por defecto. Así la demo funciona siempre, pero cuando la API está online los cambios del panel se reflejan al instante."
 
 ---
 
