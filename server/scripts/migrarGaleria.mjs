@@ -16,7 +16,10 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 const { Pool } = pg
-const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+})
 
 const TITULOS = {
   bebes: 'Bebés',
@@ -37,6 +40,29 @@ async function migrar() {
     console.error('Falta DATABASE_URL (externo de Render). Ponelo en server/.env o como variable de entorno.')
     process.exit(1)
   }
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS galeria_fotos (
+      id SERIAL PRIMARY KEY,
+      coleccion VARCHAR(50) NOT NULL,
+      nombre_archivo VARCHAR(150),
+      mime VARCHAR(50) NOT NULL,
+      bytes BYTEA NOT NULL,
+      orden INT DEFAULT 0,
+      creada_en TIMESTAMP DEFAULT NOW()
+    );
+    ALTER TABLE galeria_fotos ADD COLUMN IF NOT EXISTS orden INT DEFAULT 0;
+    CREATE INDEX IF NOT EXISTS idx_galeria_coleccion ON galeria_fotos (coleccion, orden);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_galeria_coleccion_archivo ON galeria_fotos (coleccion, nombre_archivo);
+
+    CREATE TABLE IF NOT EXISTS galeria_colecciones (
+      id VARCHAR(50) PRIMARY KEY,
+      titulo VARCHAR(100) NOT NULL,
+      orden INT DEFAULT 0,
+      portada_foto_id INT REFERENCES galeria_fotos(id) ON DELETE SET NULL,
+      creada_en TIMESTAMP DEFAULT NOW()
+    );
+  `)
 
   const resumen = {}
   for (const [i, coleccion] of ORDEN_COLECCIONES.entries()) {

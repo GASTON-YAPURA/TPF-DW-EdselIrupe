@@ -173,6 +173,7 @@ async function inicializarDB() {
         orden INT DEFAULT 0,
         creada_en TIMESTAMP DEFAULT NOW()
       );
+      ALTER TABLE galeria_fotos ADD COLUMN IF NOT EXISTS orden INT DEFAULT 0;
       CREATE INDEX IF NOT EXISTS idx_galeria_coleccion ON galeria_fotos (coleccion, orden);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_galeria_coleccion_archivo ON galeria_fotos (coleccion, nombre_archivo);
 
