@@ -287,3 +287,17 @@ https://tpf-dw-edsel-irupe.vercel.app/
  52. Docs:
          - docs/08 reorganizado en Backend / Frontend / Base de datos con las mejoras nuevas
          - changelog COMMIT E8
+
+## COMMIT E9: GALERÍA COMPLETA EN EL PANEL (FOTOS DEL SITIO + SUBIDAS)
+ 53. Admin.jsx - Pestaña Galería:
+         - Al seleccionar una colección se muestran TODAS sus fotos en dos grupos:
+           . Fotos del sitio (base): las 60 originales de galeriaData.js, con etiqueta
+             "Base del sitio" y sin botón eliminar (son parte del diseño del build)
+           . Fotos subidas desde el panel: con botón eliminar (como estaba)
+         - Contador total: "N fotos en total · X del sitio + Y subidas"
+         - Texto aclaratorio en la tarjeta de subida (las fotos base no se borran del panel)
+         - Las colecciones nuevas solo muestran el grupo de subidas
+
+ 54. Docs:
+         - docs/08: pestaña Galería (sección 7 del frontend) actualizada
+         - changelog COMMIT E9

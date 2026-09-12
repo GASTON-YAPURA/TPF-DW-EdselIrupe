@@ -305,6 +305,8 @@ function Admin() {
   const fotosDeEsta = coleccionActual()
     ? fotosDb.filter((f) => f.coleccion === coleccionActual())
     : fotosDb
+  const coleccionSelObj = coleccionesGaleria.find((c) => c.id === coleccionActual())
+  const fotosLocales = coleccionSelObj?.fotos || []
 
   if (!logueado && !token) {
     return (
@@ -552,6 +554,7 @@ function Admin() {
                 <h2 className="text-2xl font-bold text-[#373435] mb-2">Subir fotos a la galería</h2>
                 <p className="text-sm text-[#373435] opacity-60 mb-6">
                   Las fotos se guardan en la base de datos y aparecen automáticamente en el Home, dentro de su colección. Máximo 6 MB por foto (JPG, PNG o WebP).
+                  Las fotos originales del sitio están marcadas como "Base del sitio": son parte del diseño y no se eliminan desde el panel.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -608,32 +611,62 @@ function Admin() {
                 <div className="flex items-center justify-center py-16 bg-[#FEFEFE] rounded-lg">
                   <Loader2 size={32} className="text-[#C1121F] animate-spin" />
                 </div>
-              ) : fotosDeEsta.length === 0 ? (
-                <div className="text-center py-16 bg-[#FEFEFE] rounded-lg">
-                  <p className="text-lg text-[#373435] opacity-60">
-                    {coleccionActual() ? `La colección "${coleccionActual()}" no tiene fotos subidas todavía` : 'Elegí una colección para ver sus fotos'}
-                  </p>
-                </div>
               ) : (
                 <div className="bg-[#FEFEFE] rounded-lg shadow-sm p-6">
                   <h3 className="text-lg font-bold text-[#373435] mb-1">
                     Fotos en "{coleccionActual()}"
                   </h3>
                   <p className="text-sm text-[#373435] opacity-60 mb-4">
-                    {fotosDeEsta.length} foto(s) desde la base de datos
-                    {idsFijos.has(coleccionActual()) && ` · la colección local tiene ${coleccionesGaleria.find((c) => c.id === coleccionActual())?.fotos.length || 0} fotos propias`}
+                    {fotosLocales.length + fotosDeEsta.length} foto(s) en total · {fotosLocales.length} del sitio + {fotosDeEsta.length} subida(s)
                   </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {fotosDeEsta.map((f) => (
-                      <div key={f.id} className="relative group rounded-md overflow-hidden">
-                        <img src={fotoPrevia(f)} alt={f.nombre_archivo || 'foto'} loading="lazy" className="w-full h-32 md:h-40 object-cover" />
-                        <button onClick={() => eliminarFoto(f.id)}
-                          className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5 cursor-pointer opacity-0 group-hover:opacity-100 hover:bg-[#C1121F] transition-opacity" title="Eliminar foto">
-                          <Trash2 size={14} />
-                        </button>
+
+                  {fotosLocales.length === 0 && fotosDeEsta.length === 0 ? (
+                    <div className="text-center py-16">
+                      <p className="text-lg text-[#373435] opacity-60">
+                        {coleccionActual() ? `La colección "${coleccionActual()}" no tiene fotos todavía` : 'Elegí una colección para ver sus fotos'}
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {fotosLocales.length > 0 && (
+                        <div className="mb-6">
+                          <p className="text-sm font-semibold text-[#373435] opacity-70 mb-2">Fotos del sitio (base)</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            {fotosLocales.map((src, i) => (
+                              <div key={i} className="relative group rounded-md overflow-hidden">
+                                <img src={src} alt={`${coleccionActual()} - base ${i + 1}`} className="w-full h-32 md:h-40 object-cover" />
+                                <span
+                                  className="absolute bottom-2 left-2 bg-[#373435]/80 text-white text-xs font-semibold px-2 py-1 rounded"
+                                  title="Foto del diseño original del sitio: se edita en el código, no desde el panel"
+                                >
+                                  Base del sitio
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <p className="text-sm font-semibold text-[#373435] opacity-70 mb-2">Fotos subidas desde el panel</p>
+                        {fotosDeEsta.length === 0 ? (
+                          <p className="text-sm text-[#373435] opacity-60">No hay fotos subidas a esta colección todavía.</p>
+                        ) : (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            {fotosDeEsta.map((f) => (
+                              <div key={f.id} className="relative group rounded-md overflow-hidden">
+                                <img src={fotoPrevia(f)} alt={f.nombre_archivo || 'foto'} loading="lazy" className="w-full h-32 md:h-40 object-cover" />
+                                <button onClick={() => eliminarFoto(f.id)}
+                                  className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5 cursor-pointer opacity-0 group-hover:opacity-100 hover:bg-[#C1121F] transition-opacity" title="Eliminar foto">
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
