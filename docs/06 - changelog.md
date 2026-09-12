@@ -346,5 +346,15 @@ https://tpf-dw-edsel-irupe.vercel.app/
  63. vercel.json:
          - CSP: frame-src agrega https://www.openstreetmap.org (antes el iframe de
            OpenStreetMap también quedaba bloqueado por default-src 'none')
- 64. Docs:
-         - changelog COMMIT E12-B
+64. Docs:
+          - changelog COMMIT E12-B
+
+## NOTA: E12 - MIGRACIÓN DE FOTOS A LA BASE (PROBADO Y REVERTIDO)
+ 65. Se implementó migrar las 60 fotos de la galería a PostgreSQL (colecciones, portadas
+     editables y gestión completa desde el panel; commits 70f1c44 y fee9661).
+ 66. Durante la revisión se detectó que las fotos podían no verse en producción mientras
+     la API arrancaba (ventana de deploy / cold start), por eso se decidió REVERTIR
+     (commit 0b5f9c6): la galería vuelve a las fotos locales del diseño, sin depender
+     de la base ni del servidor para mostrarse.
+ 67. Lo que sí se mantiene: subir fotos extra desde el panel (tabla galeria_fotos) y
+     fusionarlas con las locales por colección.

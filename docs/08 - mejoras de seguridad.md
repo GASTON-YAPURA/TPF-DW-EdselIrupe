@@ -490,6 +490,8 @@ Componente `GaleriaSesiones.jsx` (reemplaza a `Galeria.jsx`), inspirado en el si
 
 > 📥 **Cómo agregar más fotos:** copiás la imagen en `src/assets/galeria/COLECCION/`, la importás en `galeriaData.js` y la sumás al array `fotos` de esa colección. La grilla, el contador y el lightbox la incorporan automáticamente. (Las fotos **desde el panel** no necesitan código: se suben a la base y ya aparecen.)
 
+> 📌 **Decisión de diseño (E12 probado y revertido):** las 60 fotos base viven en el código (`src/assets/galeria/`) a propósito: así la galería siempre se muestra aunque la API tarde en responder. Durante el desarrollo se implementó migrarlas a la base con portadas editables (E12) y, al revisarlo en producción, se decidió **revertir** esa migración (la galería deja de depender del servidor para mostrarse). Lo que sí queda en la base son las **fotos extra subidas desde el panel**, que se siguen fusionando con las locales por colección. En el changelog quedó documentado el paso (sección "NOTA: E12").
+
 > 🎤 **Argumento para la mesa:** "La galería replica la experiencia de un sitio de entregas de fotos (Pixieset): la clienta entra a su tipo de sesión y navega todas sus fotos en pantalla completa. Todo es accesible por clic y teclado, con lazy loading en cada imagen y sin cargar librerías externas: el visor (lightbox) es un componente propio."
 
 ### 3. Testimonios
