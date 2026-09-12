@@ -80,7 +80,7 @@ function Footer() {
         <div className="mt-10">
           <iframe
             title="Ubicación de Edsellrupe en Tinogasta, Catamarca"
-            src="https://www.google.com/maps?q=Copi%C3%A1p%C3%B3%20Eva%20Per%C3%B3n%2C%20Tinogasta%2C%20Catamarca&output=embed"
+            src="https://maps.app.goo.gl/GqP1u5XhdZHmkLm27"
             className="w-full h-64 rounded-lg border-0 shadow-md"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
