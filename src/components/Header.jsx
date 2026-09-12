@@ -33,7 +33,7 @@ function Header() {
           </NavLink>
 
           {/* Nav - Desktop */}
-          <nav className="hidden md:flex items-center gap-10">
+          <nav className="hidden md:flex items-center gap-8">
             <NavLink
               to="/"
               className={({ isActive }) =>
@@ -49,6 +49,14 @@ function Header() {
               }
             >
               Servicios
+            </NavLink>
+            <NavLink
+              to="/galeria"
+              className={({ isActive }) =>
+                `font-medium transition-colors px-5 py-3 rounded-md ${isActive ? 'bg-[#C1121F] text-[#FEFEFE]' : 'border border-transparent text-[#FEFEFE] hover:bg-[#C1121F] hover:text-[#FEFEFE]'}`
+              }
+            >
+              Galería
             </NavLink>
             <NavLink
               to="/reservar"
@@ -103,6 +111,15 @@ function Header() {
               onClick={() => setMenuOpen(false)}
             >
               Servicios
+            </NavLink>
+            <NavLink
+              to="/galeria"
+              className={({ isActive }) =>
+                `py-2 px-3 font-medium transition-colors rounded-md ${isActive ? 'bg-[#C1121F] text-[#FEFEFE]' : 'text-[#373435] hover:bg-[#C1121F] hover:text-[#FEFEFE]'}`
+              }
+              onClick={() => setMenuOpen(false)}
+            >
+              Galería
             </NavLink>
             <NavLink
               to="/reservar"

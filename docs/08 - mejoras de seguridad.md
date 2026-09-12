@@ -405,7 +405,7 @@ Archivos tocados/creados:
 - `src/lib/api.js` (base de la API + helpers de imágenes)
 - `src/components/SEO.jsx`, `src/components/{WhatsAppButton,GaleriaSesiones,Testimonios,Faq,Reveal}.jsx`, `src/components/galeriaData.js`
 - `src/assets/galeria/` (60 fotos reales, 10 por colección, optimizadas a 1024 px)
-- `src/pages/Home.jsx`, `src/pages/Servicios.jsx`, `src/pages/Reservar.jsx`, `src/pages/Admin.jsx`, `src/pages/NotFound.jsx`
+- `src/pages/Home.jsx`, `src/pages/Galeria.jsx`, `src/pages/Servicios.jsx`, `src/pages/Reservar.jsx`, `src/pages/Admin.jsx`, `src/pages/NotFound.jsx`
 - `src/App.jsx`, `src/main.jsx`, `src/components/Footer.jsx`
 - `index.html`, `public/manifest.webmanifest`, `public/sw.js`, `public/robots.txt`, `public/sitemap.xml`, `vercel.json`
 
@@ -478,7 +478,7 @@ Componente `WhatsAppButton.jsx` montado en `App.jsx` (visible en todo el sitio, 
 > 🎤 **Argumento para la mesa:** "Agregamos un botón flotante de WhatsApp con mensaje precargado. Es el canal de contacto que más usa el público local y reduce la fricción para consultar: un clic y ya están escribiendo con el mensaje listo."
 
 ### 2. Galería por colecciones (estilo Pixieset)
-Componente `GaleriaSesiones.jsx` (reemplaza a `Galeria.jsx`), inspirado en el sitio de galerías **Pixieset** de la pareja:
+Componente `GaleriaSesiones.jsx` (reemplaza a `Galeria.jsx`), inspirado en el sitio de galerías **Pixieset** de la pareja. Desde el **COMMIT E13** la galería dejó de ser una sección del Home y pasó a ser una **página propia `src/pages/Galeria.jsx`** en la ruta `/galeria`, accesible desde la barra de navegación (desktop y menú celular) entre "Servicios" y "Reservar Turno". En el Home quedó solo un **teaser** ("Mirá nuestros trabajos") con 3 miniaturas y el botón **"Ver Galería completa"** que navega a `/galeria`:
 
 - **Grilla de colecciones**: cards con la foto de portada, gradiente oscuro, nombre de la sesión y cantidad de fotos. Grilla 2 columnas (mobile) / 3 (desktop), hover con zoom.
 - **Click en una colección → galería a pantalla completa**: overlay oscuro (`z-[60]`, sobre el header) con el título, contador y una grilla scrollable de las fotos de esa sesión.
@@ -505,7 +505,7 @@ Se agregó en el `Footer` un `iframe` de **OpenStreetMap** (embed oficial `opens
 
 ### 6. Animaciones al scroll (`Reveal`)
 Componente `Reveal.jsx`: usa `IntersectionObserver` para animar (fade + slide up) las secciones cuando entran en pantalla.
-- Aplicado a: Filosofía, Sesiones más pedidas, Galería, Testimonios, FAQ (Home) y a las cards de Servicios (con `delay` escalonado).
+- Aplicado a: Home (Filosofía, Sesiones más pedidas, teaser de Galería, Testimonios, FAQ) y a las cards de Servicios (con `delay` escalonado). En la página `/galeria` la grilla de colecciones aparece sin animación para no retrasar la navegación de fotos.
 - **Accesible:** si el usuario tiene `prefers-reduced-motion: reduce`, la animación se desactiva y el contenido se muestra directo.
 
 > 🎤 **Argumento para la mesa:** "Las animaciones de entrada las hago con `IntersectionObserver` en lugar de librerías: detecto cuándo un elemento entra al viewport y aplico una transición de opacidad y desplazamiento con CSS. Además respeto la preferencia del usuario: con `prefers-reduced-motion` el contenido aparece sin animación."

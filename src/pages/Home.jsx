@@ -4,7 +4,6 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import SEO from '../components/SEO'
 import ScrollToTop from '../components/ScrollToTop'
 import Reveal from '../components/Reveal'
-import GaleriaSesiones from '../components/GaleriaSesiones'
 import Testimonios from '../components/Testimonios'
 import Faq from '../components/Faq'
 import { preguntasFaq } from '../components/faqData'
@@ -241,9 +240,46 @@ function Home() {
         <SesionesMasPedidas />
       </Reveal>
 
-      {/* Galería */}
+      {/* Teaser Galería */}
       <Reveal>
-        <GaleriaSesiones />
+        <section className="px-4 py-16 md:py-24 max-w-6xl mx-auto">
+          <div className="rounded-lg overflow-hidden shadow-md bg-[#373435] text-[#FEFEFE]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center p-8 md:p-12">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                  Mirá nuestros <span className="text-[#C1121F]">trabajos</span>
+                </h2>
+                <p className="text-lg opacity-80 mb-6">
+                  Recorré las galerías de cada sesión: bebés, paisajes, bodas,
+                  infantiles, embarazo y bautismos.
+                </p>
+                <Link
+                  to="/galeria"
+                  className="inline-block bg-[#C1121F] text-[#FEFEFE] px-6 py-2.5 rounded-md font-semibold text-base hover:bg-[#5A0B15] transition-colors"
+                >
+                  Ver Galería completa
+                </Link>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <img
+                  src={eventos}
+                  alt="Sesiones de Eventos"
+                  className="w-full h-28 md:h-36 object-cover rounded-lg"
+                />
+                <img
+                  src={particulares}
+                  alt="Sesiones Particulares"
+                  className="w-full h-28 md:h-36 object-cover rounded-lg translate-y-4"
+                />
+                <img
+                  src={infantil}
+                  alt="Sesiones Infantiles"
+                  className="w-full h-28 md:h-36 object-cover rounded-lg"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
       </Reveal>
 
       {/* Testimonios */}

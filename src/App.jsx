@@ -3,6 +3,7 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 import WhatsAppButton from './components/WhatsAppButton'
 import Home from './pages/Home'
+import Galeria from './pages/Galeria'
 import Servicios from './pages/Servicios'
 import Reservar from './pages/Reservar'
 import Admin from './pages/Admin'
@@ -16,6 +17,7 @@ function App() {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/galeria" element={<Galeria />} />
             <Route path="/servicios" element={<Servicios />} />
             <Route path="/reservar" element={<Reservar />} />
             <Route path="/admin" element={<Admin />} />

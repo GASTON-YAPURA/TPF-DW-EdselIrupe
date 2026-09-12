@@ -141,6 +141,9 @@ https://tpf-dw-edsel-irupe.vercel.app/
          - Admin.jsx: agrega spinner (Loader2) mientras se cargan datos
          - README.md: agrega instrucciones de instalación, variables de entorno y API endpoints
 
+
+
+
 ## COMMIT E4: MEJORAS DE SEGURIDAD
  23. Autenticación JWT con librería estándar:
          - server/index.js: reemplaza token custom (base64 + HMAC) por jsonwebtoken
@@ -358,3 +361,17 @@ https://tpf-dw-edsel-irupe.vercel.app/
      de la base ni del servidor para mostrarse.
  67. Lo que sí se mantiene: subir fotos extra desde el panel (tabla galeria_fotos) y
      fusionarlas con las locales por colección.
+
+## COMMIT E13: GALERÍA COMO PÁGINA PROPIA (/galeria)
+ 68. La galería sale del Home y pasa a ser una página propia:
+         - src/pages/Galeria.jsx (nuevo): envuelve a GaleriaSesiones con SEO
+           (title "Galería" + description) y fondo #F5F1EC
+         - src/App.jsx: ruta /galeria
+ 69. Header.jsx: enlace "Galería" en la barra desktop y en el menú celular, entre
+         Servicios y Reservar Turno (estilo NavLink activo consistente). La barra pasa
+         de gap-10 a gap-8 para que entre también el botón del Panel Administrativo
+ 70. Home.jsx: se elimina la sección de galería completa y se agrega un teaser
+         ("Mirá nuestros trabajos") con 3 miniaturas y botón "Ver Galería completa"
+         que navega a /galeria
+ 71. SEO: public/sitemap.xml agrega /galeria (priority 0.8)
+ 72. Docs: sección de galería de docs/08 actualizada (ahora página /galeria)
