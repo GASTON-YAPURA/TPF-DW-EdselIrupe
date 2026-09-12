@@ -335,3 +335,16 @@ https://tpf-dw-edsel-irupe.vercel.app/
          - En el menú celular aparece con su separación; en /admin no se muestra (es redundante)
  61. Docs:
          - changelog COMMIT E11
+
+## COMMIT E12-B: MAPA DEL FOOTER (OpenStreetMap + CSP)
+ 62. Footer.jsx:
+         - La ubicación ahora usa el embed oficial de OpenStreetMap (sin clave ni
+           cookies) centrado en Copiapó 501, Tinogasta (-28.0629716, -67.5674664),
+           porque Google Maps sin API key devuelve el cartel "Este contenido está
+           bloqueado" (bloqueo por consentimiento de cookies de Google) tanto con
+           output=embed como con links cortos maps.app.goo.gl
+ 63. vercel.json:
+         - CSP: frame-src agrega https://www.openstreetmap.org (antes el iframe de
+           OpenStreetMap también quedaba bloqueado por default-src 'none')
+ 64. Docs:
+         - changelog COMMIT E12-B

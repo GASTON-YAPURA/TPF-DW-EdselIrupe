@@ -499,7 +499,7 @@ Componente `Testimonios.jsx`: 3 reseñas con estrellas (iconos `Star` de lucide)
 Componente `Faq.jsx` (acordeón con `ChevronDown` rotando) construido desde `faqData.js`. Las mismas preguntas alimentan el JSON-LD `FAQPage` → aparece en Google como *Preguntas frecuentes*.
 
 ### 5. Mapa de ubicación
-Se agregó un `iframe` de Google Maps (sin API key, con `output=embed`) en el `Footer`, con `loading="lazy"` y `referrerPolicy`. Ubicación: Copiapó, Eva Perón, Tinogasta.
+Se agregó en el `Footer` un `iframe` de **OpenStreetMap** (embed oficial `openstreetmap.org/export/embed.html`) centrado en **Copiapó, Eva Perón (Copiapó 501), Tinogasta, Catamarca** (`-28.0629716, -67.5674664`) con marcador, `loading="lazy"` y `referrerPolicy`. Se eligió OSM porque Google Maps solo permite incrustar sin API key con el embed `.pb`/`output=embed`, que según región/navegador muestra el cartel "Este contenido está bloqueado" (bloqueo por consentimiento de cookies); OSM no requiere clave ni cookies y nunca sale bloqueado. El host `www.openstreetmap.org` está permitido en la CSP (`frame-src`).
 
 ### 6. Animaciones al scroll (`Reveal`)
 Componente `Reveal.jsx`: usa `IntersectionObserver` para animar (fade + slide up) las secciones cuando entran en pantalla.
