@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "migrar:galeria": "node scripts/migrarGaleria.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",

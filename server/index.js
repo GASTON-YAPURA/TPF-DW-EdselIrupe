@@ -170,9 +170,19 @@ async function inicializarDB() {
         nombre_archivo VARCHAR(150),
         mime VARCHAR(50) NOT NULL,
         bytes BYTEA NOT NULL,
+        orden INT DEFAULT 0,
         creada_en TIMESTAMP DEFAULT NOW()
       );
-      CREATE INDEX IF NOT EXISTS idx_galeria_coleccion ON galeria_fotos (coleccion);
+      CREATE INDEX IF NOT EXISTS idx_galeria_coleccion ON galeria_fotos (coleccion, orden);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_galeria_coleccion_archivo ON galeria_fotos (coleccion, nombre_archivo);
+
+      CREATE TABLE IF NOT EXISTS galeria_colecciones (
+        id VARCHAR(50) PRIMARY KEY,
+        titulo VARCHAR(100) NOT NULL,
+        orden INT DEFAULT 0,
+        portada_foto_id INT REFERENCES galeria_fotos(id) ON DELETE SET NULL,
+        creada_en TIMESTAMP DEFAULT NOW()
+      );
     `)
 
     await client.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_servicios_titulo ON servicios (titulo)')
@@ -363,17 +373,42 @@ app.delete('/api/servicios/:id/imagen', authMiddleware, async (req, res) => {
   }
 })
 
-// --- Galería: fotos almacenadas en la base de datos ---
+// --- Galería: fotos y colecciones almacenadas en la base de datos ---
+function slugificar(texto) {
+  return String(texto)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 50)
+}
+
 app.get('/api/galeria', async (_req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT id, coleccion, nombre_archivo, mime, creada_en
-       FROM galeria_fotos ORDER BY coleccion, id`
-    )
-    const colecciones = await pool.query('SELECT DISTINCT coleccion FROM galeria_fotos ORDER BY coleccion')
+    const [fotos, colecciones] = await Promise.all([
+      pool.query(
+        `SELECT id, coleccion, nombre_archivo, mime, orden, creada_en
+         FROM galeria_fotos ORDER BY coleccion, orden, id`
+      ),
+      pool.query(
+        'SELECT id, titulo, orden, portada_foto_id FROM galeria_colecciones ORDER BY orden, id'
+      ),
+    ])
+    const conColeccion = new Set(colecciones.rows.map((c) => c.id))
+    const porFotos = new Set(fotos.rows.map((f) => f.coleccion))
+    const porNombre = Array.from(porFotos)
+      .filter((id) => !conColeccion.has(id))
+      .sort()
+      .map((id) => ({
+        id,
+        titulo: id.charAt(0).toUpperCase() + id.slice(1),
+        orden: 0,
+        portada_foto_id: null,
+      }))
     res.json({
-      colecciones: colecciones.rows.map((r) => r.coleccion),
-      fotos: result.rows,
+      colecciones: [...colecciones.rows, ...porNombre],
+      fotos: fotos.rows,
     })
   } catch (err) {
     console.error('Error al obtener galería:', err)
@@ -399,6 +434,71 @@ app.get('/api/galeria/:id/imagen', async (req, res) => {
   }
 })
 
+app.post('/api/galeria/colecciones', authMiddleware, async (req, res) => {
+  const titulo = String(req.body.titulo || '').trim().slice(0, 100)
+  if (!titulo) {
+    return res.status(400).json({ error: 'El nombre de la colección es obligatorio' })
+  }
+  const id = slugificar(String(req.body.id || titulo))
+  if (!id) {
+    return res.status(400).json({ error: 'El nombre no genera un id válido' })
+  }
+  try {
+    const result = await pool.query(
+      'INSERT INTO galeria_colecciones (id, titulo) VALUES ($1, $2) RETURNING id, titulo, orden, portada_foto_id',
+      [id, titulo]
+    )
+    res.status(201).json(result.rows[0])
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'Ya existe una colección con ese nombre' })
+    }
+    console.error('Error al crear colección:', err)
+    res.status(500).json({ error: 'Error al crear la colección' })
+  }
+})
+
+app.put('/api/galeria/colecciones/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params
+  const titulo = String(req.body.titulo || '').trim().slice(0, 100)
+  const portada_foto_id = req.body.portada_foto_id != null ? Number(req.body.portada_foto_id) : null
+  try {
+    if (portada_foto_id != null) {
+      const foto = await pool.query('SELECT id FROM galeria_fotos WHERE id = $1 AND coleccion = $2', [portada_foto_id, id])
+      if (foto.rows.length === 0) {
+        return res.status(400).json({ error: 'La foto no pertenece a esa colección' })
+      }
+    }
+    const result = await pool.query(
+      `UPDATE galeria_colecciones
+       SET titulo = COALESCE(NULLIF($2, ''), titulo),
+           portada_foto_id = $3
+       WHERE id = $1
+       RETURNING id, titulo, orden, portada_foto_id`,
+      [id, titulo, portada_foto_id]
+    )
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Colección no encontrada' })
+    }
+    res.json(result.rows[0])
+  } catch (err) {
+    console.error('Error al actualizar colección:', err)
+    res.status(500).json({ error: 'Error al actualizar la colección' })
+  }
+})
+
+app.delete('/api/galeria/colecciones/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params
+  try {
+    await pool.query('DELETE FROM galeria_colecciones WHERE id = $1', [id])
+    const borradas = await pool.query('DELETE FROM galeria_fotos WHERE coleccion = $1 RETURNING id', [id])
+    res.json({ mensaje: `Colección eliminada (${borradas.rows.length} fotos)` })
+  } catch (err) {
+    console.error('Error al eliminar colección:', err)
+    res.status(500).json({ error: 'Error al eliminar la colección' })
+  }
+})
+
 app.post('/api/galeria', authMiddleware, async (req, res) => {
   const coleccion = String(req.body.coleccion || '').trim().slice(0, 50)
   if (!coleccion) {
@@ -408,14 +508,26 @@ app.post('/api/galeria', authMiddleware, async (req, res) => {
   if (validador.error) return res.status(400).json({ error: validador.error })
   const nombre_archivo = String(req.body.nombre_archivo || '').trim().slice(0, 150) || null
   try {
+    const coleccionId = slugificar(coleccion)
+    await pool.query(
+      'INSERT INTO galeria_colecciones (id, titulo) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING',
+      [coleccionId, coleccion]
+    )
+    const orden = await pool.query(
+      'SELECT COALESCE(MAX(orden), 0) + 1 AS sig FROM galeria_fotos WHERE coleccion = $1',
+      [coleccionId]
+    )
     const result = await pool.query(
-      `INSERT INTO galeria_fotos (coleccion, nombre_archivo, mime, bytes)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, coleccion, nombre_archivo, mime, creada_en`,
-      [coleccion, nombre_archivo, req.body.mime, Buffer.from(validador.base64, 'base64')]
+      `INSERT INTO galeria_fotos (coleccion, nombre_archivo, mime, bytes, orden)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, coleccion, nombre_archivo, mime, orden, creada_en`,
+      [coleccionId, nombre_archivo, req.body.mime, Buffer.from(validador.base64, 'base64'), orden.rows[0].sig]
     )
     res.status(201).json(result.rows[0])
   } catch (err) {
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'Ya existe una foto con ese nombre en la colección' })
+    }
     console.error('Error al subir foto de galería:', err)
     res.status(500).json({ error: 'Error al subir la foto' })
   }

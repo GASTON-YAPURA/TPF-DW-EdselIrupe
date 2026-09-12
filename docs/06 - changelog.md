@@ -335,3 +335,39 @@ https://tpf-dw-edsel-irupe.vercel.app/
          - En el menú celular aparece con su separación; en /admin no se muestra (es redundante)
  61. Docs:
          - changelog COMMIT E11
+
+## COMMIT E12: TODAS LAS FOTOS A LA BASE DE DATOS (PORTADAS EDITABLES)
+ 62. server/index.js:
+         - Nueva tabla galeria_colecciones: id (slug del título), titulo, orden,
+           portada_foto_id (FK a galeria_fotos, ON DELETE SET NULL)
+         - galeria_fotos ahora tiene columna orden y un único (coleccion, nombre_archivo)
+         - Helper slugificar(); GET /api/galeria devuelve { colecciones, fotos }
+         - Endpoints nuevos de colecciones: POST /api/galeria/colecciones (crear y la
+           foto subida con ese nombre se agrupa sola), PUT /api/galeria/colecciones/:id
+           (renombrar o cambiar portada_foto_id, validando que la foto pertenezca a la
+           colección), DELETE /api/galeria/colecciones/:id (borra la colección y sus fotos)
+         - POST /api/galeria auto-crea la colección si el nombre es nuevo, asigna
+           orden = MAX+1 y guarda la foto con coleccion = slug; si ya existe un archivo
+           con el mismo nombre en esa colección responde error amigable (23505)
+ 63. server/scripts/migrarGaleria.mjs (NUEVO):
+         - Script idempotente que lee src/assets/galeria y carga las 60 fotos del sitio
+           en la base con su colección y orden; no pisa la portada si ya está elegida
+         - npm run migrar:galeria en server/package.json
+ 64. GaleriaSesiones.jsx:
+         - Ya no importa galeriaData: arma la grilla 100 % desde GET /api/galeria
+           (colecciones + portadas + fotos, ordenadas por orden/id)
+         - La card usa la portada elegida en el panel y las fotos son las de la base
+ 65. Admin.jsx:
+         - Pestaña Galería: se muestran TODAS las fotos (sin distinción "base/subidas")
+           porque ahora todas viven en la base y se pueden eliminar
+         - Botón "usar como portada" (estrella) por foto; la portada actual lleva
+           la insignia "Portada" → cambia la card en el Home al instante
+         - Gestión de colecciones: crear (input), renombrar (prompt), eliminar
+           (confirmación, borra las fotos)
+         - Reordena por orden/id y muestra contador de fotos por colección
+ 66. Bundle:
+         - Al dejar de importar las 60 fotos locales, el build pasa de ~9 MB a ~0.5 MB
+ 67. Docs:
+         - docs/08: sección 2 (galería desde la base), sección 7 (pestaña Galería) y
+           sección 8 (sin fallback local en galería) actualizadas
+         - changelog COMMIT E12
