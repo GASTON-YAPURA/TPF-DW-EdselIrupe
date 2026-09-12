@@ -322,3 +322,16 @@ https://tpf-dw-edsel-irupe.vercel.app/
          - Al quitarla, el servicio vuelve a la imagen del diseño y se actualiza la lista al instante
  59. Docs:
          - changelog COMMIT E10
+
+## COMMIT E11: ACCESO RÁPIDO AL PANEL EN LA BARRA (SOLO DUEÑOS)
+ 60. Header.jsx:
+         - Enlace "👤 Panel Administrativo" en la barra de navegación, en un recuadro
+           con borde #C1121F (estilo wireframe), que SOLO aparece cuando hay sesión
+           iniciada (token en sessionStorage)
+         - El dueño puede volver al panel desde cualquier página (Servicios, Inicio,
+           Reservar) sin usar la flecha del navegador
+         - Se actualiza en cada navegación: aparece al iniciar sesión y desaparece al
+           cerrarla, sin recargar
+         - En el menú celular aparece con su separación; en /admin no se muestra (es redundante)
+ 61. Docs:
+         - changelog COMMIT E11

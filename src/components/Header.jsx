@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import logo from '../assets/icono.png'
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const location = useLocation()
+  const logueado = Boolean(sessionStorage.getItem('token'))
+  const enPanel = location.pathname === '/admin'
 
   return (
     <header className="fixed top-0 left-0 w-full bg-[#373435] shadow-sm z-50">
@@ -55,6 +58,16 @@ function Header() {
             >
               Reservar Turno
             </NavLink>
+            {logueado && !enPanel && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `font-semibold transition-colors border-2 border-[#C1121F] rounded-md px-4 py-2 ${isActive ? 'bg-[#C1121F] text-[#FEFEFE]' : 'text-[#FEFEFE] hover:bg-[#C1121F] hover:text-[#FEFEFE]'}`
+                }
+              >
+                👤 Panel Administrativo
+              </NavLink>
+            )}
           </nav>
 
           {/* Hamburger - Mobile */}
@@ -100,6 +113,20 @@ function Header() {
             >
               Reservar Turno
             </NavLink>
+            {logueado && !enPanel && (
+              <>
+                <hr className="border-t border-[#E5E5E5]" />
+                <NavLink
+                  to="/admin"
+                  className={({ isActive }) =>
+                    `py-2 px-3 text-center font-semibold transition-colors border-2 border-[#C1121F] rounded-md ${isActive ? 'bg-[#C1121F] text-[#FEFEFE]' : 'text-[#373435] hover:bg-[#C1121F] hover:text-[#FEFEFE]'}`
+                  }
+                  onClick={() => setMenuOpen(false)}
+                >
+                  👤 Panel Administrativo
+                </NavLink>
+              </>
+            )}
           </nav>
         </div>
       )}
