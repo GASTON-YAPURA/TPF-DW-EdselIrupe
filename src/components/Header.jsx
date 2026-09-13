@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
 import logo from '../assets/icono.png'
 
 function Header() {
@@ -80,11 +79,28 @@ function Header() {
 
           {/* Hamburger - Mobile */}
           <button
-            className="md:hidden text-[#FEFEFE] p-2"
+            className="md:hidden text-[#FEFEFE] p-2 cursor-pointer"
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Abrir menú"
+            aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={menuOpen}
           >
-            {menuOpen ? <X size={28} /> : <Menu size={28} />}
+            <span className="flex flex-col items-center justify-center">
+              <span
+                className={`block w-6 h-0.5 bg-current transition-all duration-300 ease-in-out ${
+                  menuOpen ? 'rotate-45 translate-y-1.5' : ''
+                }`}
+              />
+              <span
+                className={`block w-6 h-0.5 bg-current transition-all duration-300 ease-in-out my-1 ${
+                  menuOpen ? 'opacity-0' : ''
+                }`}
+              />
+              <span
+                className={`block w-6 h-0.5 bg-current transition-all duration-300 ease-in-out ${
+                  menuOpen ? '-rotate-45 -translate-y-1.5' : ''
+                }`}
+              />
+            </span>
           </button>
 
         </div>
@@ -92,7 +108,7 @@ function Header() {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="md:hidden bg-[#FEFEFE] border-t border-[#E5E5E5]">
+        <div className="md:hidden bg-[#FEFEFE] border-t border-[#E5E5E5] animate-slide-down">
           <nav className="flex flex-col px-4 py-4 gap-3">
             <NavLink
               to="/"
