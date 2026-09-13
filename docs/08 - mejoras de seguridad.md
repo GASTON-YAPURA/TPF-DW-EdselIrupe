@@ -481,7 +481,9 @@ Componente `WhatsAppButton.jsx` montado en `App.jsx` (visible en todo el sitio, 
 Componente `GaleriaSesiones.jsx` (reemplaza a `Galeria.jsx`), inspirado en el sitio de galerías **Pixieset** de la pareja. Desde el **COMMIT E13** la galería dejó de ser una sección del Home y pasó a ser una **página propia `src/pages/Galeria.jsx`** en la ruta `/galeria`, accesible desde la barra de navegación (desktop y menú celular) entre "Servicios" y "Reservar Turno". En el Home quedó solo un **teaser** ("Mirá nuestros trabajos") con 3 miniaturas y el botón **"Ver Galería completa"** que navega a `/galeria`:
 
 - **Grilla de colecciones**: cards con la foto de portada, gradiente oscuro, nombre de la sesión y cantidad de fotos. Grilla 2 columnas (mobile) / 3 (desktop), hover con zoom.
-- **Click en una colección → galería a pantalla completa**: overlay oscuro (`z-[60]`, sobre el header) con el título, contador y una grilla scrollable de las fotos de esa sesión.
+- **Click en una colección → visor directo (estilo Pixieset)**: desde el **COMMIT E14** se entra directo a un visor oscuro con la **primera foto en grande** (igual que `edselirupe.pixieset.com`), sin pasar por la grilla de fotos:
+  - Foto central grande con flechas **Anterior/Siguiente** y header con el título y el contador **"X / Y fotos"**.
+  - **Tira de miniaturas a la derecha** (desktop) para saltar a cualquier foto; en celular la tira va abajo, en horizontal. La miniatura activa se resalta con borde `#C1121F`, queda enfocada y se mantiene visible con scroll automático (`scrollIntoView({ block: 'nearest' })`).
 - **Click en una foto → lightbox**: imagen grande, flechas prev/next, contador de posición, cierre con `X` o `Escape`, navegación por teclado (`←`/`→`), bloqueo del scroll de fondo, `role="dialog"` + `aria-modal` y foco gestionado (el `Escape` cierra primero el visor y luego la colección).
 
 **Datos:** `galeriaData.js` define 6 colecciones (**Bebés, Paisajes, Bodas, Infantiles, Embarazo, Bautismos**) con **10 fotos reales cada una** bajadas del CDN de las galerías Pixieset del estudio e **optimizadas a 1024 px** (redimensionado + JPEG calidad 82) en `src/assets/galeria/<coleccion>/`.
@@ -492,7 +494,7 @@ Componente `GaleriaSesiones.jsx` (reemplaza a `Galeria.jsx`), inspirado en el si
 
 > 📌 **Decisión de diseño (E12 probado y revertido):** las 60 fotos base viven en el código (`src/assets/galeria/`) a propósito: así la galería siempre se muestra aunque la API tarde en responder. Durante el desarrollo se implementó migrarlas a la base con portadas editables (E12) y, al revisarlo en producción, se decidió **revertir** esa migración (la galería deja de depender del servidor para mostrarse). Lo que sí queda en la base son las **fotos extra subidas desde el panel**, que se siguen fusionando con las locales por colección. En el changelog quedó documentado el paso (sección "NOTA: E12").
 
-> 🎤 **Argumento para la mesa:** "La galería replica la experiencia de un sitio de entregas de fotos (Pixieset): la clienta entra a su tipo de sesión y navega todas sus fotos en pantalla completa. Todo es accesible por clic y teclado, con lazy loading en cada imagen y sin cargar librerías externas: el visor (lightbox) es un componente propio."
+> 🎤 **Argumento para la mesa:** "La galería replica la experiencia de Pixieset, el sitio de entregas de fotos del estudio: la clienta entra a su tipo de sesión y ve directo la foto en grande, con una tira de miniaturas para saltar entre fotos (igual que en `edselirupe.pixieset.com`). Todo es accesible por clic y teclado (`←`/`→`/`Escape`), con lazy loading, y sin cargar librerías externas: el visor es un componente propio con `IntersectionObserver` para scroll y miniatura activa que se mantiene visible con `scrollIntoView`."
 
 ### 3. Testimonios
 Componente `Testimonios.jsx`: 3 reseñas con estrellas (iconos `Star` de lucide) y nombre del cliente. Son ejemplos de demostración, listos para reemplazar por opiniones reales.

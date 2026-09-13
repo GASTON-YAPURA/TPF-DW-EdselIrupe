@@ -375,3 +375,22 @@ https://tpf-dw-edsel-irupe.vercel.app/
          que navega a /galeria
  71. SEO: public/sitemap.xml agrega /galeria (priority 0.8)
  72. Docs: sección de galería de docs/08 actualizada (ahora página /galeria)
+
+## COMMIT E14: VISOR DE GALERÍA ESTILO PIXIESET
+ 73. Al abrir una colección ya NO se muestra primero la grilla de fotos: se entra
+     directo a un visor oscuro (como el de edselirupe.pixieset.com) con la PRIMERA
+     foto en grande:
+         - Foto grande central + flechas Anterior/Siguiente + header con título y
+           contador "X / Y fotos"
+         - Tira de miniaturas a la derecha (desktop) para saltar a cualquier foto;
+           en celular la tira va abajo en horizontal
+         - La miniatura activa se resalta con borde #C1121F y se hace scroll
+           automático para mantenerla visible (scrollIntoView block: nearest)
+         - La miniatura activa se mantiene en foco: al navegar con teclado la tira
+           la sigue
+ 74. Accesibilidad:
+         - Teclado: ← / → cambian de foto y Escape cierra el visor (vuelve a la grilla)
+         - Foco inicial en el botón de cerrar al abrir; role="dialog" + aria-modal;
+           miniatura activa con aria-current; bloqueo del scroll de fondo
+ 75. Grilla de colecciones (landing) y Home sin cambios.
+ 76. Docs: sección de galería de docs/08 actualizada con el nuevo visor (COMMIT E14)

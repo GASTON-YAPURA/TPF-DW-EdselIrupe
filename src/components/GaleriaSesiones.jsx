@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { coleccionesGaleria } from './galeriaData'
 import { obtenerRecurso, urlImagenGaleria } from '../lib/api'
 
 function GaleriaSesiones() {
   const [coleccion, setColeccion] = useState(null)
-  const [indice, setIndice] = useState(null)
+  const [indice, setIndice] = useState(0)
   const [fotosDb, setFotosDb] = useState([])
-  const cerrarColeccion = useRef(null)
   const cerrarVisor = useRef(null)
+  const miniaturaActiva = useRef(null)
 
   useEffect(() => {
     let activo = true
@@ -45,15 +45,12 @@ function GaleriaSesiones() {
   useEffect(() => {
     if (!coleccion) return
     function onKey(e) {
-      if (e.key === 'Escape') {
-        if (indice !== null) setIndice(null)
-        else setColeccion(null)
-      }
+      if (e.key === 'Escape') setColeccion(null)
       if (e.key === 'ArrowLeft') {
-        setIndice((i) => (i === null ? i : (i - 1 + coleccion.fotos.length) % coleccion.fotos.length))
+        setIndice((i) => (i - 1 + coleccion.fotos.length) % coleccion.fotos.length)
       }
       if (e.key === 'ArrowRight') {
-        setIndice((i) => (i === null ? i : (i + 1) % coleccion.fotos.length))
+        setIndice((i) => (i + 1) % coleccion.fotos.length)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -62,15 +59,20 @@ function GaleriaSesiones() {
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = ''
     }
-  }, [coleccion, indice])
+  }, [coleccion])
 
   useEffect(() => {
-    if (coleccion && indice === null) cerrarColeccion.current?.focus()
-  }, [coleccion, indice])
+    if (coleccion) cerrarVisor.current?.focus()
+  }, [coleccion])
 
   useEffect(() => {
-    if (indice !== null) cerrarVisor.current?.focus()
+    miniaturaActiva.current?.scrollIntoView({ block: 'nearest' })
   }, [indice])
+
+  const anterior = () =>
+    setIndice((i) => (i - 1 + coleccion.fotos.length) % coleccion.fotos.length)
+  const siguiente = () =>
+    setIndice((i) => (i + 1) % coleccion.fotos.length)
 
   return (
     <section id="galeria" className="px-4 py-16 md:py-24 max-w-6xl mx-auto">
@@ -83,7 +85,7 @@ function GaleriaSesiones() {
           <button
             key={col.id}
             onClick={() => {
-              setIndice(null)
+              setIndice(0)
               setColeccion(col)
             }}
             className="group relative overflow-hidden rounded-lg shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C1121F]"
@@ -106,7 +108,7 @@ function GaleriaSesiones() {
 
       {coleccion && (
         <div
-          className="fixed inset-0 z-[60] bg-[#171515] overflow-y-auto"
+          className="fixed inset-0 z-[60] bg-[#171515] flex flex-col"
           role="dialog"
           aria-modal="true"
           aria-label={`Galería de ${coleccion.titulo}`}
@@ -114,10 +116,12 @@ function GaleriaSesiones() {
           <div className="sticky top-0 z-10 flex items-center justify-between gap-4 px-4 md:px-6 py-4 bg-[#171515]/95 backdrop-blur">
             <div>
               <h3 className="text-xl md:text-2xl font-bold text-white">{coleccion.titulo}</h3>
-              <p className="text-sm text-white/60">{coleccion.fotos.length} fotos</p>
+              <p className="text-sm text-white/60">
+                {indice + 1} / {coleccion.fotos.length} fotos
+              </p>
             </div>
             <button
-              ref={cerrarColeccion}
+              ref={cerrarVisor}
               onClick={() => setColeccion(null)}
               aria-label="Cerrar galería"
               className="text-white p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-white"
@@ -126,71 +130,81 @@ function GaleriaSesiones() {
             </button>
           </div>
 
-          <div className="px-4 md:px-6 pb-10 max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-            {coleccion.fotos.map((src, i) => (
-              <button
-                key={src}
-                onClick={() => setIndice(i)}
-                className="group overflow-hidden rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C1121F]"
-                aria-label={`Ver foto ${i + 1} de ${coleccion.titulo}`}
-              >
-                <img
-                  src={src}
-                  alt={`${coleccion.titulo} - foto ${i + 1}`}
-                  loading="lazy"
-                  className="w-full h-48 md:h-64 object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+          {coleccion.fotos.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-white/60 p-8">
+              Esta colección todavía no tiene fotos.
+            </div>
+          ) : (
+            <>
+              <div className="flex-1 flex flex-col md:flex-row min-h-0">
+                <div className="relative flex-1 flex items-center justify-center bg-black/60 min-h-0">
+                  <button
+                    onClick={anterior}
+                    aria-label="Foto anterior"
+                    className="absolute left-2 md:left-4 z-10 text-white p-2 rounded-full bg-black/40 hover:bg-black/70 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-white"
+                  >
+                    <ChevronLeft size={30} />
+                  </button>
+                  <img
+                    src={coleccion.fotos[indice]}
+                    alt={`${coleccion.titulo} - foto ${indice + 1}`}
+                    className="max-w-full max-h-[75vh] md:max-h-[80vh] rounded-lg object-contain shadow-2xl px-14 md:px-10"
+                  />
+                  <button
+                    onClick={siguiente}
+                    aria-label="Foto siguiente"
+                    className="absolute right-2 md:right-4 z-10 text-white p-2 rounded-full bg-black/40 hover:bg-black/70 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-white"
+                  >
+                    <ChevronRight size={30} />
+                  </button>
+                </div>
 
-      {coleccion && indice !== null && (
-        <div
-          className="fixed inset-0 z-[70] bg-black/95 flex items-center justify-center px-4"
-          onClick={() => setIndice(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Visor de ${coleccion.titulo}`}
-        >
-          <button
-            ref={cerrarVisor}
-            onClick={() => setIndice(null)}
-            aria-label="Cerrar visor"
-            className="absolute top-4 right-4 text-white p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-white"
-          >
-            <X size={30} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setIndice((i) => (i - 1 + coleccion.fotos.length) % coleccion.fotos.length)
-            }}
-            aria-label="Foto anterior"
-            className="absolute left-2 md:left-6 text-white p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-white"
-          >
-            <ChevronLeft size={30} />
-          </button>
-          <img
-            src={coleccion.fotos[indice]}
-            alt={`${coleccion.titulo} - foto ${indice + 1}`}
-            onClick={(e) => e.stopPropagation()}
-            className="max-w-full max-h-[85vh] rounded-lg object-contain shadow-2xl"
-          />
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setIndice((i) => (i + 1) % coleccion.fotos.length)
-            }}
-            aria-label="Foto siguiente"
-            className="absolute right-2 md:right-6 text-white p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-white"
-          >
-            <ChevronRight size={30} />
-          </button>
-          <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm">
-            {indice + 1} / {coleccion.fotos.length}
-          </p>
+                <aside className="hidden md:flex flex-col w-40 lg:w-56 overflow-y-auto bg-[#171515] border-l border-white/10 shrink-0">
+                  {coleccion.fotos.map((src, i) => (
+                    <button
+                      key={src}
+                      ref={i === indice ? miniaturaActiva : null}
+                      onClick={() => setIndice(i)}
+                      aria-label={`Ver foto ${i + 1} de ${coleccion.titulo}`}
+                      aria-current={i === indice}
+                      className={`relative shrink-0 h-16 m-1.5 rounded-md overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C1121F] ${
+                        i === indice ? 'ring-2 ring-[#C1121F] opacity-100' : 'opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <img
+                        src={src}
+                        alt={`${coleccion.titulo} - foto ${i + 1}`}
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </aside>
+              </div>
+
+              <div className="md:hidden flex items-center gap-2 overflow-x-auto px-4 py-3 border-t border-white/10 shrink-0">
+                {coleccion.fotos.map((src, i) => (
+                  <button
+                    key={src}
+                    ref={i === indice ? miniaturaActiva : null}
+                    onClick={() => setIndice(i)}
+                    aria-label={`Ver foto ${i + 1} de ${coleccion.titulo}`}
+                    aria-current={i === indice}
+                    className={`relative shrink-0 w-14 h-14 rounded-md overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C1121F] ${
+                      i === indice ? 'ring-2 ring-[#C1121F] opacity-100' : 'opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={src}
+                      alt={`${coleccion.titulo} - foto ${i + 1}`}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </section>
