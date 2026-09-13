@@ -20,7 +20,7 @@ function App() {
             <Route path="/galeria" element={<Galeria />} />
             <Route path="/servicios" element={<Servicios />} />
             <Route path="/reservar" element={<Reservar />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/edselirupePanelAdmin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

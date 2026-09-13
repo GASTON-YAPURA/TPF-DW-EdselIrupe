@@ -80,7 +80,7 @@ https://tpf-dw-edsel-irupe.vercel.app/
         - Modal de cobro (registrar pagos)
         - Botón eliminar reserva
         - Modal "Añadir Turno Manual" para agendar clientes externos
-        - Fix: rewrites en vercel.json para SPA routing (ruta /admin)
+        - Fix: rewrites en vercel.json para SPA routing (ruta del panel)
 
  9. Footer - Redes Sociales y Contacto:
         - Iconos SVG de Instagram y Facebook con enlaces reales
@@ -199,7 +199,7 @@ https://tpf-dw-edsel-irupe.vercel.app/
          - SEO.jsx: Twitter Cards, og:locale es_AR, dimensiones og:image
          - Admin.jsx y NotFound.jsx: noindex, nofollow
          - index.html: favicon, theme-color, manifest, metas iOS
-         - robots.txt: Disallow /admin
+         - robots.txt: Disallow la ruta del panel
          - sitemap.xml: lastmod
 
  35. Botón flotante de WhatsApp:
@@ -335,7 +335,7 @@ https://tpf-dw-edsel-irupe.vercel.app/
            Reservar) sin usar la flecha del navegador
          - Se actualiza en cada navegación: aparece al iniciar sesión y desaparece al
            cerrarla, sin recargar
-         - En el menú celular aparece con su separación; en /admin no se muestra (es redundante)
+         - En el menú celular aparece con su separación; en el panel no se muestra (es redundante)
  61. Docs:
          - changelog COMMIT E11
 
@@ -411,3 +411,14 @@ https://tpf-dw-edsel-irupe.vercel.app/
            (urlImagenServicio(id)).
  79. Los 5 servicios del diseño (Eventos, Particulares, Temáticas, Infantiles,
      Individuales y Grupales) siguen mostrando su imagen local por título.
+
+## COMMIT D11: RUTA DEL PANEL RENOMBRADA (seguridad por ofuscación)
+ 80. El panel ya no se accede por /admin sino por una ruta no adivinable elegida por
+     el dueño. La autenticación (usuario/contraseña) sigue como barrera real; la ruta
+     oculta agrega una capa más de discreción.
+ 81. src/App.jsx: ruta del panel → /edselirupePanelAdmin
+ 82. src/components/Header.jsx: el enlace "👤 Panel Administrativo" (desktop y menú
+     celular) y el estado `enPanel` ahora usan la nueva ruta. Solo se muestra con
+     sesión iniciada, así la URL no queda expuesta en el sitio público.
+ 83. public/robots.txt: Disallow de la nueva ruta (el panel no se indexa).
+ 84. La ruta /admin anterior ya no existe (devuelve la página 404).

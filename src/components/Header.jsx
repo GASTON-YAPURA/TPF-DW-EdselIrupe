@@ -6,7 +6,7 @@ function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
   const logueado = Boolean(sessionStorage.getItem('token'))
-  const enPanel = location.pathname === '/admin'
+  const enPanel = location.pathname === '/edselirupePanelAdmin'
 
   return (
     <header className="fixed top-0 left-0 w-full bg-[#373435] shadow-sm z-50">
@@ -67,7 +67,7 @@ function Header() {
             </NavLink>
             {logueado && !enPanel && (
               <NavLink
-                to="/admin"
+                to="/edselirupePanelAdmin"
                 className={({ isActive }) =>
                   `font-semibold transition-colors border-2 border-[#C1121F] rounded-md px-4 py-2 ${isActive ? 'bg-[#C1121F] text-[#FEFEFE]' : 'text-[#FEFEFE] hover:bg-[#C1121F] hover:text-[#FEFEFE]'}`
                 }
@@ -150,7 +150,7 @@ function Header() {
               <>
                 <hr className="border-t border-[#E5E5E5]" />
                 <NavLink
-                  to="/admin"
+                  to="/edselirupePanelAdmin"
                   className={({ isActive }) =>
                     `py-2 px-3 text-center font-semibold transition-colors border-2 border-[#C1121F] rounded-md ${isActive ? 'bg-[#C1121F] text-[#FEFEFE]' : 'text-[#373435] hover:bg-[#C1121F] hover:text-[#FEFEFE]'}`
                   }

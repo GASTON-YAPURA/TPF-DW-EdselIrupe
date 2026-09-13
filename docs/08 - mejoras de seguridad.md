@@ -415,7 +415,7 @@ Archivos tocados/creados:
 
 ### 1. Canonical dinámico por página (bug corregido)
 
-**Problemática:** `SEO.jsx` hacía `url || SITIO` y ninguna página pasaba `url`. Resultado: en `/servicios`, `/reservar` y `/admin` el `canonical` apuntaba a la **raíz** del sitio → Google podía tratarlas como duplicadas.
+**Problemática:** `SEO.jsx` hacía `url || SITIO` y ninguna página pasaba `url`. Resultado: en `/servicios`, `/reservar` y la ruta del panel el `canonical` apuntaba a la **raíz** del sitio → Google podía tratarlas como duplicadas.
 
 **Solución:** el componente deriva el canonical de la ruta actual con `useLocation()`:
 ```jsx
@@ -465,7 +465,7 @@ En `SEO.jsx` se agregaron: **Twitter Cards** (`twitter:card`, `twitter:title`, `
 
 ### 5. robots.txt y sitemap
 
-- `robots.txt`: ahora con `Disallow: /admin`.
+- `robots.txt`: ahora con `Disallow` de la ruta del panel (ruta renombrada, no indexable).
 - `sitemap.xml`: se sumó `<lastmod>` (fecha de última modificación).
 
 ---
@@ -518,7 +518,7 @@ El Admin pasa de ser una sola tabla de reservas a un panel con pestañas:
 
 - **Reservas:** KPIs, cobros, borrar y alta manual (todo como estaba).
 - **Servicios:** listado con miniatura, **crear, editar y eliminar** servicios con modal y **subir/cambiar la imagen** de cada uno (FileReader → base64 → preview → `POST /api/servicios/:id/imagen`). Al editar se muestra la imagen actual y se puede **quitar la foto de portada** con el botón "Quitar foto" (con confirmación; `DELETE /api/servicios/:id/imagen`): el servicio vuelve a usar la imagen del diseño.
-- **Acceso rápido (solo dueños):** cuando hay sesión iniciada, la barra de navegación muestra el enlace **"👤 Panel Administrativo"** en un recuadro con borde `#C1121F`. Aparece en todas las páginas públicas (excepto en `/admin`) y permite volver al panel con un clic, sin usar la flecha del navegador. Se actualiza en cada navegación según el estado de sesión.
+- **Acceso rápido (solo dueños):** cuando hay sesión iniciada, la barra de navegación muestra el enlace **"👤 Panel Administrativo"** en un recuadro con borde `#C1121F`. Aparece en todas las páginas públicas (excepto en el panel) y permite volver al panel con un clic, sin usar la flecha del navegador. Se actualiza en cada navegación según el estado de sesión.
 - **Galería:** selector de colección (las 6 fijas + las creadas desde el panel + casilla "colección nueva"), subida **múltiple** de fotos con preview y borrado de cada una (thumbnails desde `GET /api/galeria/:id/imagen`). Al seleccionar una colección se muestran **las fotos del sitio (base), con etiqueta "Base del sitio" y sin botón eliminar** (son parte del diseño y viven en el código), seguidas de **las subidas desde el panel, con botón eliminar**.
 
 > 🎤 **Argumento para la mesa:** "El panel quedó como una mini-CMS: el dueño del estudio gestiona sus reservas, los servicios con su foto y la galería de fotos sin tocar código. Cada acción usa el token JWT del login y el servidor valida todo de nuevo."
