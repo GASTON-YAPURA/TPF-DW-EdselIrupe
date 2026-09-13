@@ -399,3 +399,15 @@ https://tpf-dw-edsel-irupe.vercel.app/
  77. src/index.css: en pantallas hasta 767px la raíz tipográfica pasa de 16px a 14px,
      lo que achica proporcionalmente todos los textos del sitio en celular
      (títulos, párrafos, nav, tarjetas) sin tocar el CSS de cada componente
+
+## COMMIT D10: SERVICIOS SIN FOTO NO MUESTRAN IMAGEN
+ 78. src/pages/Servicios.jsx:
+         - Antes, un servicio nuevo sin imagen caía al fallback `eventos` y la tarjeta
+           mostraba la foto de "Sesiones de Eventos" (incorrecto).
+         - Ahora el fallback es `null`: si el servicio no tiene foto subida (tiene_imagen
+           false y su título no corresponde a los 5 servicios del diseño), NO se
+           renderiza el <img> y la tarjeta arranca directo con el título.
+         - Cuando se le sube una foto desde el panel, la tarjeta muestra esa imagen
+           (urlImagenServicio(id)).
+ 79. Los 5 servicios del diseño (Eventos, Particulares, Temáticas, Infantiles,
+     Individuales y Grupales) siguen mostrando su imagen local por título.

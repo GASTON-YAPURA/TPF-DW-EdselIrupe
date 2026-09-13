@@ -10,7 +10,8 @@ import tematica from '../assets/temática.png'
 import infantil from '../assets/infantil.png'
 import grupales from '../assets/individuales y grupales.png'
 
-// Imágenes locales por defecto (fallback si el servicio no tiene imagen en la base).
+// Imágenes locales por defecto: solo aplican a los 5 servicios del diseño (se matchean por título).
+// Los servicios nuevos sin foto NO muestran imagen.
 const imagenesLocales = {
   'Sesiones de Eventos': eventos,
   'Sesiones Particulares': particulares,
@@ -75,7 +76,7 @@ function Servicios() {
           ...s,
           imagen: s.tiene_imagen
             ? urlImagenServicio(s.id)
-            : imagenesLocales[s.titulo] || eventos,
+            : imagenesLocales[s.titulo] || null,
         }))
       )
     })
@@ -104,12 +105,14 @@ function Servicios() {
         {servicios.map((s, i) => (
           <Reveal key={s.id} delay={i * 100}>
             <div className="rounded-lg overflow-hidden shadow-md bg-[#FEFEFE] border border-[#E5E5E5]">
-              <img
-                src={s.imagen}
-                alt={s.titulo}
-                loading="lazy"
-                className="h-48 w-full object-cover"
-              />
+              {s.imagen && (
+                <img
+                  src={s.imagen}
+                  alt={s.titulo}
+                  loading="lazy"
+                  className="h-48 w-full object-cover"
+                />
+              )}
               <div className="p-5">
                 <h3 className="text-xl font-bold text-[#373435] mb-2">
                   {s.titulo}
