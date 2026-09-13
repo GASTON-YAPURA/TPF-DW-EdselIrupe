@@ -422,3 +422,9 @@ https://tpf-dw-edsel-irupe.vercel.app/
      sesión iniciada, así la URL no queda expuesta en el sitio público.
  83. public/robots.txt: Disallow de la nueva ruta (el panel no se indexa).
  84. La ruta /admin anterior ya no existe (devuelve la página 404).
+
+## COMMIT D12: MOSTRAR/OCULTAR CONTRASEÑA EN EL LOGIN DEL PANEL
+ 85. src/pages/Admin.jsx: el campo de contraseña del login tiene un botón (ojito,
+     íconos Eye/EyeOff de lucide) que alterna entre ocultarla (type=password) y
+     mostrarla (type=text) para poder verificar lo que se está escribiendo.
+     Accesible: aria-label + title "Mostrar/Ocultar contraseña".

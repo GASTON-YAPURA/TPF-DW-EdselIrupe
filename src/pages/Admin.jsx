@@ -5,7 +5,7 @@ import { API_URL, urlImagenServicio } from '../lib/api'
 import { coleccionesGaleria } from '../components/galeriaData'
 import {
   LogIn, LogOut, Lock, Plus, Trash2, DollarSign, BarChart3, TrendingUp, AlertCircle,
-  X, Loader2, Pencil, Upload, Images, Briefcase, CalendarRange, Image as ImageIcon,
+  X, Loader2, Pencil, Upload, Images, Briefcase, CalendarRange, Image as ImageIcon, Eye, EyeOff,
 } from 'lucide-react'
 
 const serviciosList = [
@@ -24,6 +24,7 @@ function Admin() {
   const [logueado, setLogueado] = useState(Boolean(token))
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [verPassword, setVerPassword] = useState(false)
   const [error, setError] = useState('')
   const [tab, setTab] = useState('reservas')
   const [cargando, setCargando] = useState(false)
@@ -340,8 +341,24 @@ function Admin() {
               </div>
               <div>
                 <label className="block text-[#373435] font-semibold mb-1">Contraseña</label>
-                <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError('') }} required
-                  className="w-full border border-[#E5E5E5] rounded-md px-4 py-3 bg-[#FEFEFE] focus:outline-none focus:ring-2 focus:ring-[#C1121F]" />
+                <div className="relative">
+                  <input
+                    type={verPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError('') }}
+                    required
+                    className="w-full border border-[#E5E5E5] rounded-md px-4 py-3 pr-12 bg-[#FEFEFE] focus:outline-none focus:ring-2 focus:ring-[#C1121F]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setVerPassword((v) => !v)}
+                    aria-label={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    title={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    className="absolute inset-y-0 right-3 flex items-center text-[#373435] opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
+                  >
+                    {verPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
               </div>
               {error && <p className="text-[#C1121F] text-sm">{error}</p>}
               <button type="submit" disabled={cargando}
