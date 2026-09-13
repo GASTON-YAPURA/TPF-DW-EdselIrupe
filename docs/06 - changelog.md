@@ -428,3 +428,10 @@ https://tpf-dw-edsel-irupe.vercel.app/
      íconos Eye/EyeOff de lucide) que alterna entre ocultarla (type=password) y
      mostrarla (type=text) para poder verificar lo que se está escribiendo.
      Accesible: aria-label + title "Mostrar/Ocultar contraseña".
+
+## COMMIT D13: DOC DE MEJORAS REESTRUCTURADO
+ 86. docs/08 - mejoras de seguridad.md reescrito en lenguaje simple y más corto
+     (de ~580 a ~280 líneas), dividido en MEJORAS - BACKEND / FRONTEND / BASE DE
+     DATOS con ítems numerados estilo changelog: cada uno explica "qué hace" y
+     "por qué importa". Se sacaron los bloques de código, quedan 2-3 frases 🎤
+     por sección y anexos breves (deploy en Render + preguntas frecuentes).

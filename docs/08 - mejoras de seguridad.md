@@ -1,583 +1,247 @@
 # 🔧 08 - Mejoras Aplicadas al Proyecto
 
-> Documento guía de las mejoras implementadas sobre Edsellrupe.
-> Está dividido en **MEJORAS EN EL BACKEND**, **MEJORAS EN EL FRONTEND** y
-> **MEJORAS EN LA BASE DE DATOS**.
-> Cada mejora incluye: **problemática**, **solución aplicada**, **archivos tocados** y un
-> **argumento de 2 minutos** para explicarla en la mesa de examen final.
+> Guía rápida de las mejoras de Edsellrupe, ordenadas por **BACKEND**, **FRONTEND** y
+> **BASE DE DATOS**. Cada ítem explica en pocas palabras qué hace y por qué importa,
+> sin entrar en código (para estudiar y explicar en la mesa).
 
 ---
 
-# 🔒 MEJORAS EN EL BACKEND
+# 🖥️ MEJORAS - BACKEND
 
-## 📋 Resumen
+## Resumen
 
-| # | Mejora | Impacto |
+| # | Mejora | Por qué importa |
 | :--- | :--- | :--- |
-| 1 | Autenticación JWT con librería estándar (`jsonwebtoken`) | Elimina el token "hecho a mano" |
-| 2 | Variables de entorno obligatorias (sin credenciales por defecto) | Elimina `admin` / `admin123` |
-| 3 | Límite de intentos de login (`express-rate-limit`) | Previene fuerza bruta |
-| 4 | El `total` de la reserva se calcula 100% en el backend | Evita manipular precios |
-| 5 | Validación de fecha, horario y campos en el servidor | Evita fechas pasadas y datos inválidos |
-| 6 | CORS estricto (lista blanca exacta) | Restringe el origen de las peticiones |
-| 7 | `helmet` en la API | Endurece las cabeceras HTTP de la API |
-| 8 | Catálogo de servicios centralizado en la base de datos | Una sola fuente de verdad para precios |
-| 9 | Control de sobrepago en los cobros | El cliente no puede pagar más del saldo |
-| 10 | CRUD de servicios con endpoints protegidos | El panel puede crear/editar/borrar servicios |
-| 11 | Subida de imágenes (servicios y galería) con validación | MIME permitido + tope 6 MB por archivo |
-| 12 | Límite de tamaño del body JSON (`15mb`) | Admite uploads por JSON sin agregar dependencias |
+| 1 | Login con token JWT | El acceso al panel es seguro y con vencimiento |
+| 2 | Sin credenciales por defecto | No hay usuario público ni contraseña fácil |
+| 3 | Límite de intentos de login | Frena ataques de fuerza bruta |
+| 4 | Precio calculado en el servidor | Nadie puede cambiar el total desde el navegador |
+| 5 | Validación en el servidor | No se reservan fechas pasadas ni datos inválidos |
+| 6 | CORS estricto | Solo nuestra web puede llamar a la API |
+| 7 | Cabeceras de seguridad (helmet) | Endurece las respuestas; permite ver las fotos subidas |
+| 8 | CRUD de servicios protegido | El panel crea/edita/borra servicios con el token |
+| 9 | Subida de imágenes validada | Solo JPG/PNG/WebP de hasta 6 MB |
+| 10 | Body JSON amplio (15 MB) | Soporta las fotos sin librerías extra |
+| 11 | Control de sobrepago | No se puede cobrar más que el saldo |
 
-Archivos tocados:
-- `server/index.js`
-- `server/package.json` (nuevas dependencias)
-- `server/.env.example` (nuevo)
-- `eslint.config.js` (soporte de globals de Node para el server)
+Últimos ajustes: `helmet` ahora permite que las fotos del API se vean desde la web
+(CORP `cross-origin`) y la CSP agregó `manifest-src`.
 
----
+Archivos tocados: `server/index.js`, `server/package.json`, `server/.env.example`, `render.yaml`.
 
-## 1️⃣ Autenticación JWT con librería estándar
+## Mejoras
 
-### Problemática
-El token del panel admin se generaba a mano con `crypto`:
-```js
-// ANTES
-const data = JSON.stringify({ username, exp: Date.now() + 86400000 })
-const hash = crypto.createHmac('sha256', SECRETO).update(data).digest('hex')
-return Buffer.from(data + '.' + hash).toString('base64')
-```
-- Firmaba, expiraba y codificaba el token **a mano** (propenso a errores).
-- La comparación del hash no era resistente a *timing attacks*.
+1. **Login seguro con token (JWT)**
+   - Qué hace: al entrar al panel se emite un token que vence en 24 h; cada acción lo valida.
+   - Por qué importa: sin token no se puede operar el panel, aunque alguien encuentre la ruta.
 
-### Solución
-```js
-import jwt from 'jsonwebtoken'
+2. **Sin credenciales por defecto (variables obligatorias)**
+   - Qué hace: si faltan `ADMIN_USER`, `ADMIN_PASS` o `JWT_SECRET`, el servidor no arranca.
+   - Por qué importa: se elimina el clásico `admin/admin123` y el token deja de reiniciarse solo.
 
-function generarToken(username) {
-  return jwt.sign({ username }, SECRETO, { expiresIn: '1d' }) // expira en 24hs
-}
+3. **Límite de intentos de login**
+   - Qué hace: por IP hay 5 intentos cada 15 minutos; después responde 429.
+   - Por qué importa: imposibilita probar contraseñas de a miles (fuerza bruta).
 
-function verificarToken(token) {
-  try { return jwt.verify(token, SECRETO) } catch { return null }
-}
-```
-`jwt.verify` valida firma **y** expiración de forma estándar. El `authMiddleware` sigue igual.
+4. **El precio total se calcula solo en el servidor**
+   - Qué hace: el total de la reserva se busca en la base, el navegador ya no lo envía.
+   - Por qué importa: nadie puede abrir DevTools y poner `total: 0`.
 
-> 🎤 **Argumento para la mesa:** "El acceso admin usa JWT generado y verificado con la librería `jsonwebtoken`. Un JWT es un token autónomo (usuario + expiración) firmado con un secreto. Antes se firmaba a mano con HMAC sobre Base64, lo que era frágil. Con la librería, la validación de firma y vencimiento es estándar y auditada."
+5. **Validación de campos y fechas en el servidor**
+   - Qué hace: rechaza fechas pasadas, emails/teléfonos mal escritos y textos demasiado largos.
+   - Por qué importa: la regla vale aunque salteen el formulario (la del cliente es solo estética).
 
----
+6. **CORS estricto**
+   - Qué hace: la API acepta pedidos solo desde localhost y el dominio de producción.
+   - Por qué importa: ningún otro sitio puede consumir (ni reutilizar) nuestra API.
 
-## 2️⃣ Variables de entorno obligatorias
+7. **Cabeceras de seguridad con helmet**
+   - Qué hace: agrega las cabeceras estándar (protege de clickjacking, sniffing, fuerza HTTPS).
+   - Por qué importa: es un endurecimiento que se logra con una sola línea. Además se ajustó la
+     opción *Cross-Origin-Resource-Policy* a `cross-origin` para que las imágenes subidas desde
+     el panel se puedan ver en la web (sin ese ajuste el navegador las bloqueaba).
 
-### Problemática
-Si no existían `ADMIN_USER` / `ADMIN_PASS` / `JWT_SECRET`, el servidor usaba `admin` / `admin123` por defecto, o un secreto aleatorio que **invalidaba las sesiones en cada reinicio**:
-```js
-// ANTES
-const SECRETO = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex')
-const ADMIN_USER = process.env.ADMIN_USER || 'admin'
-const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123'
-```
+8. **CRUD de servicios protegido por token**
+   - Qué hace: crear, editar y eliminar servicios pasa por el token del login y por validación.
+   - Por qué importa: el catálogo se administra desde el panel sin tocar código, y solo el dueño.
 
-### Solución
-```js
-const SECRETO = process.env.JWT_SECRET
-const ADMIN_USER = process.env.ADMIN_USER
-const ADMIN_PASS = process.env.ADMIN_PASS
+9. **Subida de imágenes validada**
+   - Qué hace: acepta JPG, PNG o WebP hasta 6 MB; valida en el cliente y otra vez en el servidor.
+   - Por qué importa: la regla de seguridad vive en el servidor (el cliente es solo comodidad).
 
-if (!SECRETO || !ADMIN_USER || !ADMIN_PASS) {
-  console.error('Faltan variables de entorno obligatorias...')
-  process.exit(1) // no arranca
-}
-```
-Se agregó `server/.env.example` como plantilla.
+10. **Imágenes transportadas por JSON (body de 15 MB)**
+    - Qué hace: el límite del body subió a 15 MB para mandar fotos en base64.
+    - Por qué importa: sin librerías extra (multer/busboy), suficiente para galerías de estudio.
 
-> 🎤 **Argumento para la mesa:** "Quitamos todo valor por defecto: si el `.env` no define `ADMIN_USER`, `ADMIN_PASS` y `JWT_SECRET`, el servidor se niega a iniciar. Así no quedan credenciales públicas y el secreto del token es estable entre reinicios."
+11. **Control de sobrepago en los cobros**
+    - Qué hace: no permite registrar un pago mayor al saldo pendiente.
+    - Por qué importa: mantiene consistente la "caja" del estudio.
+
+## Frases para la mesa (BACKEND)
+
+> 🎤 "El acceso al panel usa JWT: un token firmado que vence en 24 h. Además hay 5 intentos de
+> login cada 15 minutos, no hay credenciales por defecto y el precio nunca viaja desde el
+> navegador: lo calcula el servidor contra la base de datos."
+
+> 🎤 "Todo lo que entra al servidor se valida de nuevo: fechas, campos, tipos de imagen y tamaño.
+> Las reglas del cliente son solo para dar aviso rápido; las que importan están en el servidor."
 
 ---
 
-## 3️⃣ Límite de intentos de login (rate limiting)
+# 🗄️ MEJORAS - BASE DE DATOS
 
-### Problemática
-El login aceptaba intentos infinitos → fuerza bruta sin freno.
+## Resumen
 
-### Solución
-```js
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,   // ventana de 15 minutos
-  max: 5,                     // máximo 5 intentos
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Demasiados intentos de inicio de sesión. Intentalo en 15 minutos.' },
-})
+| # | Mejora | Por qué importa |
+| :--- | :--- | :--- |
+| 1 | PostgreSQL en Render | Los datos quedan guardados en la nube, no en la PC |
+| 2 | Fotos de galería en la base (`BYTEA`) | Las fotos subidas "viven" en la base |
+| 3 | Foto propia por servicio | Cada servicio puede tener su imagen |
+| 4 | Esquema que se crea solo | Sin migraciones manuales |
+| 5 | Índices | Consultas rápidas y sin duplicados |
 
-app.post('/api/auth/login', loginLimiter, (req, res) => { ... })
-```
+Archivos tocados: `server/index.js` (creación de tablas), `render.yaml`, `server/.env.example`.
 
-> 🎤 **Argumento para la mesa:** "El login está protegido por rate limiting: por IP solo hay 5 intentos cada 15 minutos. Pasado ese límite, el servidor responde 429 y bloquea. Así se mitiga el ataque de fuerza bruta sobre las credenciales del administrador."
+## Mejoras
 
----
+1. **PostgreSQL en la nube (Render)**
+   - Qué hace: la base corre en Render (plan free) y se conecta por `DATABASE_URL`.
+   - Por qué importa: las reservas, servicios y fotos subidas persisten en producción.
 
-## 4️⃣ El precio total se calcula solo en el backend
+2. **Fotos de galería guardadas en la base**
+   - Qué hace: las fotos subidas desde el panel se guardan como binario (`BYTEA`) con su tipo.
+   - Por qué importa: la base es la única fuente de verdad y se sirven tal cual con su formato.
 
-### Problemática
-El formulario enviaba el `total` calculado con JS del cliente:
-```js
-// ANTES (frontend)
-body: JSON.stringify({ ...form, total: obtenerPrecioNumerico(form.servicio) })
-```
-Cualquiera podía abrir DevTools y cambiar `total: 0`.
+3. **Foto propia por servicio**
+   - Qué hace: cada servicio puede tener su imagen y su formato en la base.
+   - Por qué importa: el panel puede poner/cambiar/quitar la foto de cada servicio.
 
-### Solución
-- El frontend **ya no envía** `total`.
-- El backend lo busca en la tabla `servicios`:
-```js
-async function totalDeServicio(titulo) {
-  const result = await pool.query(
-    'SELECT precio FROM servicios WHERE LOWER(titulo) = LOWER($1)', [titulo]
-  )
-  if (result.rows.length === 0) return null
-  return precioNumerico(result.rows[0].precio) // "$25.000" -> 25000
-}
-```
-- Si el servicio no existe → `400`.
-- Al arrancar, el servidor **siembra el catálogo** con los 5 servicios (`INSERT ... ON CONFLICT (titulo) DO NOTHING`), con un índice único sobre `titulo`.
+4. **El esquema se crea solo al arrancar**
+   - Qué hace: al iniciar, el servidor crea las tablas y columnas que falten (idempotente) y
+     siembra el catálogo de los 5 servicios.
+   - Por qué importa: un deploy sobre una base nueva o existente funciona sin pasos manuales.
 
-> 🎤 **Argumento para la mesa:** "El precio nunca viaja desde el cliente: el servidor lo toma de la tabla `servicios`. Esto impide manipular el `total`. Además centralizamos el catálogo en la base de datos: una sola fuente de verdad."
+5. **Índices**
+   - Qué hace: índice por colección en la galería y título único en servicios.
+   - Por qué importa: consultas rápidas y sin servicios duplicados.
+
+## Frases para la mesa (BASE DE DATOS)
+
+> 🎤 "Las fotos de galería las guardo como binario dentro de PostgreSQL: no dependo de servicios
+> externos (Cloudinary/S3) y el TP pide datos en base de datos. El listado de fotos no trae los
+> binarios: cada foto se pide por su propia URL."
+
+> 🎤 "El esquema se autogestiona: al arrancar crea lo que falta y siembra el catálogo inicial.
+> No hace falta correr migraciones a mano en los deploys."
 
 ---
 
-## 5️⃣ Validación de fecha, horario y campos en el servidor
+# 🎨 MEJORAS - FRONTEND
 
-### Problemática
-Se podían reservar fechas pasadas y no se validaban formatos ni longitudes en el servidor.
+## Resumen
 
-### Solución
-```js
-function validarCampos(nombre, email, telefono) {
-  if (!nombre || nombre.trim().length === 0 || nombre.length > 150) return 'El nombre es obligatorio (máx. 150)'
-  if (!email || email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Email inválido'
-  if (!telefono || telefono.length > 50 || !/^[\d\s+()-]{7,20}$/.test(telefono)) return 'Teléfono inválido'
-  return null
-}
-
-function validarFecha(fecha) {
-  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
-  const f = new Date(`${fecha}T00:00:00`)
-  if (isNaN(f.getTime())) return 'Fecha inválida'
-  if (f < hoy) return 'La fecha no puede ser anterior a hoy'
-  return null
-}
-```
-Se aplican a `POST /api/reservas` y a `POST /api/reservas/manual`.
-
-> 🎤 **Argumento para la mesa:** "La validación se hace en el cliente (usabilidad) y en el servidor (seguridad). El servidor rechaza fechas pasadas, emails/teléfonos inválidos y longitudes excesivas. La regla 'no se reserva en el pasado' queda garantizada aunque alguien saltee el formulario."
-
----
-
-## 6️⃣ CORS estricto
-
-### Problemática
-Antes se aceptaba **cualquier subdominio de Vercel** (cualquiera puede crearlos gratis):
-```js
-// ANTES
-origin.endsWith('.vercel.app')
-```
-
-### Solución
-```js
-app.use(cors({
-  origin: ['http://localhost:5173', 'https://tpf-dw-edsel-irupe.vercel.app'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-}))
-```
-
-> 🎤 **Argumento para la mesa:** "CORS define qué dominios pueden consumir la API desde el navegador. Antes aceptábamos cualquier subdominio `.vercel.app`. Ahora solo el localhost de desarrollo y el dominio de producción."
-
----
-
-## 7️⃣ Cabeceras de seguridad con helmet
-
-### Problemática
-La API no enviaba cabeceras de seguridad.
-
-### Solución
-```js
-app.use(helmet())
-```
-`helmet` agrega `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`, CSP por defecto, etc.
-
-> 🎤 **Argumento para la mesa:** "El backend usa `helmet`, que agrega de una vez las cabeceras de seguridad estándar: evita el clickjacking (X-Frame-Options), el MIME sniffing y fuerza HTTPS (HSTS)."
-
----
-
-## Extras de backend
-
-- **8. Catálogo en BD:** los 5 servicios viven en la tabla `servicios` (seed automático + índice único) y se sirven por `GET /api/servicios`. Los precios se actualizan en un solo lugar.
-- **9. Control de sobrepago:** `PUT /api/reservas/:id/cobro` rechaza montos `<= 0` y valida que `monto <= (total - abonado)`. Antes era posible abonar más que el total.
-
-> 🎤 **Argumento para la mesa (sobrepago):** "El endpoint de cobro ahora valida el saldo pendiente: no se puede registrar un pago mayor a lo que falta pagar. Esto mantiene la consistencia de la 'caja' del estudio."
-
----
-
-## 🚀 Deploy de la API en Render (importante)
-
-### Problemática
-Al subir el backend **con las variables obligatorias** (`JWT_SECRET`, `ADMIN_USER`, `ADMIN_PASS`), si Render no las tenía configuradas el servidor moría en el arranque (`process.exit(1)`) → **Deploy failed**.
-
-### Solución (Dashboard de Render)
-
-En **dashboard.render.com → tu Web Service** configurar:
-
-1. **Root Directory** → `server` (para que Render use el `package.json` del backend y no el del frontend).
-2. **Build Command** → `npm install`
-3. **Start Command** → `npm start` (equivale a `node index.js`)
-4. **Environment** → agregar estas 4 variables y guardar:
-
-| Variable | Ejemplo |
+| Área | Mejora |
 | :--- | :--- |
-| `DATABASE_URL` | `postgresql://usuario:password@host:5432/edsellrupe` |
-| `JWT_SECRET` | clave de 96 caracteres: `ff441c83...` (generada con `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`) |
-| `ADMIN_USER` | `admin` (o el usuario que quieras) |
-| `ADMIN_PASS` | una contraseña segura |
+| SEO | Canonical por página, datos estructurados, `noindex`, metas y favicon completos |
+| UX | WhatsApp flotante, página de galería, visor tipo Pixieset, tipografía móvil, animaciones, testimonios, FAQ, mapa, menú hamburguesa |
+| Panel | Pestañas Reservas/Servicios/Galería, mostrar/ocultar contraseña, ruta oculta, servicios sin foto y fallback offline |
 
-5. **Deploy** → **Deploy latest commit**.
+Archivos tocados: componentes `SEO`, `Header`, `Footer`, `GaleriaSesiones`, `WhatsAppButton`,
+`Testimonios`, `Faq`, `Reveal`; páginas `Home`, `Galeria`, `Servicios`, `Reservar`, `Admin`;
+`index.html`, `public/{manifest, sw, robots.txt, sitemap.xml}`, `vercel.json`, `src/assets/galeria/`.
 
-> ⚠️ **Ojo:** al cambiar `ADMIN_PASS` después, los tokens viejos siguen válidos 1 día (el token firma solo el `username`). Si querés invalidar sesiones, cambiá también `JWT_SECRET`.
+## SEO
 
-### Alternativa reproducible: `render.yaml`
+1. **Canonical y datos estructurados**
+   - Qué hace: cada página declara su URL canónica (tomada de la ruta) y se emitieron datos
+     estructurados tipo `Photographer` y `FAQPage` con datos reales del estudio.
+   - Por qué importa: Google no mezcla páginas duplicadas y puede mostrar el sitio como "rich result".
 
-Dejé un **blueprint** en la raíz del repo (`render.yaml`). Crea la API con los 4 valores de arriba, `rootDir: server`, build `npm install`, start `npm start` y `healthCheckPath: /api/servicios`. Las variables secretas quedan `sync: false`, o sea se completan en el Dashboard.
+2. **Panel y 404 fuera de Google + metas completas**
+   - Qué hace: el panel y el 404 llevan `noindex`; hay favicon, `theme-color`, manifest,
+     Twitter Cards y `og:locale`. `robots.txt` excluye la ruta del panel y `sitemap.xml` tiene `lastmod`.
+   - Por qué importa: lo privado no se indexa y el resto se ve bien al compartir.
 
-> 🎤 **Argumento para la mesa:** "El 'fail fast' es intencional: el servidor prefiere no arrancar a funcionar con un secreto vacío o credenciales por defecto. La configuración queda documentada en `render.yaml`, lista para reproducir el deploy."
+## UX / Visual
 
----
+3. **Botón flotante de WhatsApp**
+   - Qué hace: botón fijo abajo a la izquierda que abre WhatsApp con mensaje precargado.
+   - Por qué importa: es el canal que más usa el público local; un clic y ya escriben.
 
-## 🔟 1️⃣0️⃣ CRUD de servicios con endpoints protegidos
+4. **Galería en página propia + visor estilo Pixieset**
+   - Qué hace: la galería pasó a `/galeria` (enlace en el menú) y al abrir una colección se entra
+     directo a la **foto en grande** con tira de miniaturas, flechas y teclado (←/→/Escape).
+   - Por qué importa: replica la experiencia de las galerías reales del estudio (pixieset.com) y
+     funciona con clic y teclado.
 
-### Problemática
-La web mostraba los servicios **hardcodeados** en el frontend y la API solo permitía leerlos (`GET /api/servicios`). Para cambiar un servicio había que tocar código y volver a deployar.
+5. **Tipografía más compacta en móvil**
+   - Qué hace: en pantallas chicas (≤767px) la letra base baja a 14 px.
+   - Por qué importa: el sitio se ve proporcionado en el celular sin tocar cada componente.
 
-### Solución
-Nuevos endpoints, todos detrás de `authMiddleware` (JWT):
-```js
-app.post('/api/servicios', authMiddleware, ...)     // crear
-app.put('/api/servicios/:id', authMiddleware, ...)  // editar
-app.delete('/api/servicios/:id', authMiddleware, ...) // eliminar
-```
-Con validación de campos (`validarServicio`: título, descripción, duración, precio numérico `$25.000`) y control del índice único `titulo` (duplicado → `400`). `GET /api/servicios` ahora devuelve `tiene_imagen` en lugar de los bytes de imagen.
+6. **Animaciones suaves al scroll**
+   - Qué hace: al entrar en pantalla, secciones y tarjetas aparecen con un leve movimiento.
+   - Por qué importa: da un toque profesional; respeta `prefers-reduced-motion` (accesible).
 
-> 🎤 **Argumento para la mesa:** "El catálogo de servicios ahora se administra desde el panel con el mismo token JWT del login. Crear, editar o eliminar un servicio es una operación autenticada y validada en el servidor, y se refleja de inmediato en la página Servicios y en el formulario de reserva."
+7. **Testimonios y FAQ**
+   - Qué hace: sección con 3 reseñas con estrellas y acordeón de preguntas frecuentes.
+   - Por qué importa: genera confianza y las preguntas también aparecen como datos estructurados.
 
----
+8. **Mapa de ubicación (OpenStreetMap)**
+   - Qué hace: el footer embebe un mapa de OpenStreetMap centrado en el estudio.
+   - Por qué importa: ubica al negocio y, a diferencia de Google Maps, no aparece "bloqueado".
 
-## 1️⃣1️⃣ Subida de imágenes con validación (servicios y galería)
+9. **Menú hamburguesa animado**
+   - Qué hace: las 3 rayitas del menú celular se transforman en una X y el menú baja con animación.
+   - Por qué importa: mejora la sensación de calidad del sitio sin librerías.
 
-### Problemática
-Las imágenes llegaban estáticas (PNGs locales en `src/assets`) o como base de datos sin control del tamaño/formato.
+## Panel
 
-### Solución
-Función compartida de validación de imágenes (base64 en el body JSON):
-```js
-const MIMES_VALIDOS = new Set(['image/jpeg', 'image/png', 'image/webp'])
-const TAMANIO_MAX_IMAGEN = 6 * 1024 * 1024 // 6 MB
+10. **Panel en pestañas (Reservas · Servicios · Galería)**
+    - Qué hace: administra reservas (KPIs, cobros, borrar, alta manual), servicios con su foto y
+      galería (subir/borrar fotos). Con sesión iniciada aparece el enlace "👤 Panel Administrativo".
+    - Por qué importa: el dueño gestiona todo sin tocar código ("mini-CMS").
 
-function validarImagen(data, mime) {
-  if (!MIMES_VALIDOS.has(mime)) return { error: 'Formato no permitido (solo JPG, PNG o WebP)' }
-  const base64 = String(data || '').replace(/^data:[^;]+;base64,/, '')
-  const bytes = Buffer.byteLength(base64, 'base64')
-  if (!base64) return { error: 'La imagen está vacía' }
-  if (bytes > TAMANIO_MAX_IMAGEN) return { error: 'La imagen no puede superar los 6 MB' }
-  return { base64, bytes }
-}
-```
-- `POST /api/servicios/:id/imagen` → guarda o reemplaza la foto del servicio; `DELETE` la borra.
-- `POST /api/galeria` → guarda una foto de galería en `galeria_fotos`.
-- `GET .../imagen` públicos: sirven el archivo con su `Content-Type` real y `Cache-Control`.
-- El frontend *también* valida antes de enviar (mismo whitelist y tope), pero la **regla de seguridad vive en el servidor**.
+11. **Contraseña visible y ruta del panel oculta**
+    - Qué hace: el login tiene un "ojito" para mostrar/ocultar la contraseña, y la ruta del panel
+      ya no es `/admin` sino una no adivinable (elegida por el dueño y excluida de robots.txt).
+    - Por qué importa: evita errores al tipear la clave y agrega una capa de discreción.
 
-> 🎤 **Argumento para la mesa:** "Las imágenes se validan dos veces: en el cliente para dar feedback inmediato y en el servidor para que nadie pueda subir un archivo de otro tipo o de tamaño excesivo. Solo aceptamos JPG, PNG y WebP de hasta 6 MB."
+12. **Servicios sin foto y datos con respaldo**
+    - Qué hace: un servicio nuevo sin imagen ya no muestra una foto ajena (queda sin imagen hasta
+      subir la suya) y toda la web usa la API con un respaldo con datos locales.
+    - Por qué importa: nada rompe si la API tarda en responder y el panel refleja los cambios al toque.
 
----
+## Frases para la mesa (FRONTEND)
 
-## 1️⃣2️⃣ Body JSON con más capacidad (`15mb`)
+> 🎤 "La galería replica Pixieset, el sitio de entregas de fotos del estudio: se entra a la foto en
+> grande con miniaturas, teclas ←/→/Escape y acumulada con las fotos que se suben desde el panel."
 
-### Problemática
-`express.json()` sin opciones limita el body a ~100 KB → un upload de foto (base64) fallaba con `413 Payload Too Large`.
+> 🎤 "El panel es un mini-CMS en pestañas (reservas, servicios y galería) protegido por el login.
+> Cada acción usa el token y el servidor valida todo de nuevo."
 
-### Solución
-```js
-app.use(express.json({ limit: '15mb' }))
-```
-Alcanza para varias fotos por request sin recurrir a `multer`/`busboy` ni multipart.
-
-> 🎤 **Argumento para la mesa:** "Elegí transportar las imágenes como base64 dentro del JSON para no agregar dependencias al proyecto: el límite del body se subió a 15 MB. Para el volumen de una galería de estudio es suficiente y simplifica el deploy."
-
----
-
-# 🗄️ MEJORAS EN LA BASE DE DATOS
-
-> La base de datos da soporte a: catálogo de servicios, reservas cobradas y **galería con fotos almacenadas**.
-
-## 📋 Resumen
-
-| # | Mejora | Impacto |
-| :--- | :--- | :--- |
-| 1 | PostgreSQL en Render (plan free) | Datos persistentes, no solo en local |
-| 2 | Tabla `galeria_fotos` con fotos en `BYTEA` | Las imágenes "viven" en la base |
-| 3 | Columnas `imagen` y `imagen_mime` en `servicios` | Foto propia por servicio |
-| 4 | Creación automática de tablas al arrancar (`inicializarDB`) | Sin migraciones manuales |
-| 5 | Índice por colección e índice único de títulos | Consultas rápidas y sin duplicados |
-
-Archivos tocados:
-- `server/index.js` (queries, endpoints y `inicializarDB`)
-- `render.yaml` (env `DATABASE_URL` obligatoria, `sync: false`)
-- `server/.env` (local, gitignored) + `server/.env.example`
-
-## 1️⃣ Crear la base en Render (1 vez)
-
-1. **dashboard.render.com → New → PostgreSQL** (plan free, mismo comando).
-2. Copiar el **Internal Connection String** (así se usa dentro de la red de Render).
-3. En el Web Service → **Environment** → pegar ese valor en `DATABASE_URL` (+ `JWT_SECRET`, `ADMIN_USER`, `ADMIN_PASS`).
-4. **Manual Deploy** → el backend crea las tablas solo al arrancar.
-
-> ⚠️ El archivo `server/.env` es **solo local** (está gitignoreado): Render no lo lee, los valores van en el Dashboard.
-
-## 2️⃣ Tabla `galeria_fotos` (fotos en la base)
-
-```sql
-CREATE TABLE IF NOT EXISTS galeria_fotos (
-  id SERIAL PRIMARY KEY,
-  coleccion VARCHAR(50) NOT NULL,
-  nombre_archivo VARCHAR(150),
-  mime VARCHAR(50) NOT NULL,
-  bytes BYTEA NOT NULL,
-  creada_en TIMESTAMP DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS idx_galeria_coleccion ON galeria_fotos (coleccion);
-```
-- La foto se guarda **como binario (`BYTEA`)** junto con su `mime` → se puede servir tal cual con el `Content-Type` correcto.
-- `GET /api/galeria` devuelve el listado **sin los bytes** (metadata), y `GET /api/galeria/:id/imagen` sirve el binario.
-
-> 🎤 **Argumento para la mesa:** "Guardamos las fotos como `BYTEA` dentro de PostgreSQL: la base es la única fuente de verdad y no dependemos de un servicio externo de archivos. El listado no trae los binarios, se piden por separado con su propia URL de imagen."
-
-## 3️⃣ Foto por servicio (`imagen`, `imagen_mime`)
-
-```sql
-ALTER TABLE servicios ADD COLUMN IF NOT EXISTS imagen BYTEA;
-ALTER TABLE servicios ADD COLUMN IF NOT EXISTS imagen_mime VARCHAR(50);
-```
-Si el servicio tiene imagen en la base, el frontend la muestra; si no, usa la PNG local.
-
-## 4️⃣ Auto-creación de esquema
-
-`inicializarDB()` (en `server/index.js`) ejecuta `CREATE TABLE IF NOT EXISTS` y `ALTER ... ADD COLUMN IF NOT EXISTS` al arrancar: **no hay que correr migraciones a mano**. También siembra los 5 servicios del catálogo (`ON CONFLICT DO NOTHING`).
-
-> 🎤 **Argumento para la mesa:** "El esquema se autogestiona: al desplegar por primera vez, el servidor crea las tablas y siembra el catálogo inicial. Las columnas nuevas se agregan de forma idempotente, así un deploy sobre una base existente no rompe nada."
-
-## 🎤 Preguntas que te pueden hacer (base de datos)
-
-- **¿Por qué `BYTEA` y no Cloudinary/S3?** Porque el TP pide datos en base de datos; así todo queda en un solo lugar y sin cuentas extra. Para una galería de ~100 fotos de <6 MB es más que suficiente.
-- **¿Y si la foto es de 5 MB devlo de base?** Se recomienda optimizarla antes de subir (el panel muestra el tope de 6 MB por archivo).
-- **¿La API sigue viva si la base no responde?** No: es un estado deliberado; los endpoints devuelven `500` y el log lo registra.
+> 🎤 "El frontend consume la API pero no depende de ella: hay un respaldo con los datos por
+> defecto, así la demo funciona siempre y además es instalable como PWA."
 
 ---
 
-# 🎨 MEJORAS EN EL FRONTEND
+## 📦 Anexo: Deploy de la API en Render (resumen)
 
-## 📋 Resumen
+1. Crear el Web Service con **Root Directory** `server`, build `npm install`, start `npm start`.
+2. Crear la base PostgreSQL (mismo comando de Render) y copiar la *Internal Connection String*.
+3. En **Environment** cargar: `DATABASE_URL`, `JWT_SECRET`, `ADMIN_USER`, `ADMIN_PASS`.
+4. Deploy → el backend crea las tablas solo al arrancar.
+5. Alternativa reproducible: blueprint `render.yaml` (la base y los valores secretos se completan
+   en el Dashboard).
+6. Ojo: al cambiar `ADMIN_PASS` después, los tokens viejos siguen válidos hasta 24 h.
 
-| Área | Mejora | Impacto |
-| :--- | :--- | :--- |
-| SEO | Canonical dinámico por página | Corrige canonical repetidos |
-| SEO | JSON-LD real + tipo `Photographer` + FAQPage | Mejores rich results |
-| SEO | `noindex` en Admin y 404 | No indexa páginas privadas |
-| SEO | Favicon, `theme-color`, Twitter Cards, `og:locale`, robots.txt, sitemap `<lastmod>` | Meta completo |
-| UX | Botón flotante de WhatsApp | Canal de contacto directo |
-| UX | Galería por colecciones (estilo Pixieset) | Muestra el trabajo por sesión |
-| UX | Testimonios de clientes | Confianza social |
-| UX | Sección FAQ (visual + JSON-LD) | Resuelve dudas + SEO |
-| UX | Mapa de ubicación embebido | Contexto local |
-| UX | Animaciones suaves al scroll (`Reveal`) | Toque profesional (accesible) |
-| PWA | Manifest + Service Worker + iconos | Instalable y offline (meta del TP) |
-| Panel | Admin con 3 pestañas: Reservas, Servicios y Galería | Gestiona reservas, catálogo y fotos |
-| Datos | Servicios y galería desde la API con fallback offline | Refleja los cambios del panel al instante |
+## ❓ Preguntas que te pueden hacer
 
-Archivos tocados/creados:
-- `src/lib/api.js` (base de la API + helpers de imágenes)
-- `src/components/SEO.jsx`, `src/components/{WhatsAppButton,GaleriaSesiones,Testimonios,Faq,Reveal}.jsx`, `src/components/galeriaData.js`
-- `src/assets/galeria/` (60 fotos reales, 10 por colección, optimizadas a 1024 px)
-- `src/pages/Home.jsx`, `src/pages/Galeria.jsx`, `src/pages/Servicios.jsx`, `src/pages/Reservar.jsx`, `src/pages/Admin.jsx`, `src/pages/NotFound.jsx`
-- `src/App.jsx`, `src/main.jsx`, `src/components/Footer.jsx`
-- `index.html`, `public/manifest.webmanifest`, `public/sw.js`, `public/robots.txt`, `public/sitemap.xml`, `vercel.json`
-
----
-
-## 🔍 SEO
-
-### 1. Canonical dinámico por página (bug corregido)
-
-**Problemática:** `SEO.jsx` hacía `url || SITIO` y ninguna página pasaba `url`. Resultado: en `/servicios`, `/reservar` y la ruta del panel el `canonical` apuntaba a la **raíz** del sitio → Google podía tratarlas como duplicadas.
-
-**Solución:** el componente deriva el canonical de la ruta actual con `useLocation()`:
-```jsx
-import { useLocation } from 'react-router-dom'
-const location = useLocation()
-const canonical = url || `${SITIO}${location.pathname}`
-```
-
-> 🎤 **Argumento para la mesa:** "El canonical indica a Google la URL canónica de cada página. Antes todas apuntaban a la raíz porque el componente usaba una URL por defecto. Ahora se calcula desde la ruta con `useLocation`: cada página declara su propia URL canónica."
-
-### 2. JSON-LD real + tipo `Photographer` + FAQPage
-
-**Problemática:** la API del LocalBusiness tenía teléfono y email **ficticios** (`+54 9 1234...`, `info@edsellrupe.com`) que no coincidían con el footer, y el tipo `LocalBusiness` es menos específico.
-
-**Solución:**
-- Tipo **`Photographer`** (subtipo de LocalBusiness, más preciso para un estudio fotográfico).
-- Datos reales: `+54 3837 430319` e `irupevilla57@gmail.com`, y redes sociales reales.
-- Nuevo bloque **`FAQPage`** construido a partir de las mismas preguntas del componente FAQ (una sola fuente de verdad). `SEO.jsx` ahora acepta un array de JSON-LD.
-
-```jsx
-const jsonLdFaq = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: preguntasFaq.map((faq) => ({ '@type': 'Question', name: faq.pregunta, ... })),
-}
-```
-
-> 🎤 **Argumento para la mesa:** "Los datos estructurados deben ser reales y consistentes con el sitio, si no Google los descarta (Rich Results). Usamos el tipo `Photographer` por ser más específico que `LocalBusiness`, y agregamos un `FAQPage` generado desde la misma lista de preguntas que se muestran en pantalla."
-
-### 3. `noindex` en Admin y 404
-
-```jsx
-<SEO title="Panel Admin" noindex />
-```
-`SEO.jsx` acepta la prop `noindex` para emitir `<meta name="robots" content="noindex, nofollow">`. El panel admin y la página 404 no deben aparecer en los resultados de búsqueda.
-
-### 4. Meta tags completos + favicon
-
-En `index.html`:
-```html
-<meta name="theme-color" content="#373435" />
-<link rel="icon" type="image/png" href="/icono.png" />
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-<link rel="manifest" href="/manifest.webmanifest" />
-```
-En `SEO.jsx` se agregaron: **Twitter Cards** (`twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`), `og:locale` (`es_AR`) y dimensiones `og:image:width/height`.
-
-### 5. robots.txt y sitemap
-
-- `robots.txt`: ahora con `Disallow` de la ruta del panel (ruta renombrada, no indexable).
-- `sitemap.xml`: se sumó `<lastmod>` (fecha de última modificación).
-
----
-
-## 🖥️ UX / Visual
-
-### 1. Botón flotante de WhatsApp
-Componente `WhatsAppButton.jsx` montado en `App.jsx` (visible en todo el sitio, fijo abajo a la izquierda). Abre `https://wa.me/543837430319?text=...` con un mensaje precargado. Usa el verde oficial de WhatsApp `#25D366` (es el color de la marca del canal, no de la paleta) y un logo SVG inline.
-
-> 🎤 **Argumento para la mesa:** "Agregamos un botón flotante de WhatsApp con mensaje precargado. Es el canal de contacto que más usa el público local y reduce la fricción para consultar: un clic y ya están escribiendo con el mensaje listo."
-
-### 2. Galería por colecciones (estilo Pixieset)
-Componente `GaleriaSesiones.jsx` (reemplaza a `Galeria.jsx`), inspirado en el sitio de galerías **Pixieset** de la pareja. Desde el **COMMIT E13** la galería dejó de ser una sección del Home y pasó a ser una **página propia `src/pages/Galeria.jsx`** en la ruta `/galeria`, accesible desde la barra de navegación (desktop y menú celular) entre "Servicios" y "Reservar Turno". En el Home quedó solo un **teaser** ("Mirá nuestros trabajos") con 3 miniaturas y el botón **"Ver Galería completa"** que navega a `/galeria`:
-
-- **Grilla de colecciones**: cards con la foto de portada, gradiente oscuro, nombre de la sesión y cantidad de fotos. Grilla 2 columnas (mobile) / 3 (desktop), hover con zoom.
-- **Click en una colección → visor directo (estilo Pixieset)**: desde el **COMMIT E14** se entra directo a un visor oscuro con la **primera foto en grande** (igual que `edselirupe.pixieset.com`), sin pasar por la grilla de fotos:
-  - Foto central grande con flechas **Anterior/Siguiente** y header con el título y el contador **"X / Y fotos"**.
-  - **Tira de miniaturas a la derecha** (desktop) para saltar a cualquier foto; en celular la tira va abajo, en horizontal. La miniatura activa se resalta con borde `#C1121F`, queda enfocada y se mantiene visible con scroll automático (`scrollIntoView({ block: 'nearest' })`).
-- **Click en una foto → lightbox**: imagen grande, flechas prev/next, contador de posición, cierre con `X` o `Escape`, navegación por teclado (`←`/`→`), bloqueo del scroll de fondo, `role="dialog"` + `aria-modal` y foco gestionado (el `Escape` cierra primero el visor y luego la colección).
-
-**Datos:** `galeriaData.js` define 6 colecciones (**Bebés, Paisajes, Bodas, Infantiles, Embarazo, Bautismos**) con **10 fotos reales cada una** bajadas del CDN de las galerías Pixieset del estudio e **optimizadas a 1024 px** (redimensionado + JPEG calidad 82) en `src/assets/galeria/<coleccion>/`.
-
-**Y además:** la galería se **fusiona con la base de datos**. Al montar se consulta `GET /api/galeria`; las fotos subidas desde el panel se agregan a su colección (se muestran después de las locales) y las **colecciones nuevas creadas en el panel aparecen como cards nuevas** en la grilla. Si la API no responde, queda la galería local como fallback.
-
-> 📥 **Cómo agregar más fotos:** copiás la imagen en `src/assets/galeria/COLECCION/`, la importás en `galeriaData.js` y la sumás al array `fotos` de esa colección. La grilla, el contador y el lightbox la incorporan automáticamente. (Las fotos **desde el panel** no necesitan código: se suben a la base y ya aparecen.)
-
-> 📌 **Decisión de diseño (E12 probado y revertido):** las 60 fotos base viven en el código (`src/assets/galeria/`) a propósito: así la galería siempre se muestra aunque la API tarde en responder. Durante el desarrollo se implementó migrarlas a la base con portadas editables (E12) y, al revisarlo en producción, se decidió **revertir** esa migración (la galería deja de depender del servidor para mostrarse). Lo que sí queda en la base son las **fotos extra subidas desde el panel**, que se siguen fusionando con las locales por colección. En el changelog quedó documentado el paso (sección "NOTA: E12").
-
-> 🎤 **Argumento para la mesa:** "La galería replica la experiencia de Pixieset, el sitio de entregas de fotos del estudio: la clienta entra a su tipo de sesión y ve directo la foto en grande, con una tira de miniaturas para saltar entre fotos (igual que en `edselirupe.pixieset.com`). Todo es accesible por clic y teclado (`←`/`→`/`Escape`), con lazy loading, y sin cargar librerías externas: el visor es un componente propio con `IntersectionObserver` para scroll y miniatura activa que se mantiene visible con `scrollIntoView`."
-
-### 3. Testimonios
-Componente `Testimonios.jsx`: 3 reseñas con estrellas (iconos `Star` de lucide) y nombre del cliente. Son ejemplos de demostración, listos para reemplazar por opiniones reales.
-
-### 4. FAQ (visual + rich result)
-Componente `Faq.jsx` (acordeón con `ChevronDown` rotando) construido desde `faqData.js`. Las mismas preguntas alimentan el JSON-LD `FAQPage` → aparece en Google como *Preguntas frecuentes*.
-
-### 5. Mapa de ubicación
-Se agregó en el `Footer` un `iframe` de **OpenStreetMap** (embed oficial `openstreetmap.org/export/embed.html`) centrado en **Copiapó, Eva Perón (Copiapó 501), Tinogasta, Catamarca** (`-28.0629716, -67.5674664`) con marcador, `loading="lazy"` y `referrerPolicy`. Se eligió OSM porque Google Maps solo permite incrustar sin API key con el embed `.pb`/`output=embed`, que según región/navegador muestra el cartel "Este contenido está bloqueado" (bloqueo por consentimiento de cookies); OSM no requiere clave ni cookies y nunca sale bloqueado. El host `www.openstreetmap.org` está permitido en la CSP (`frame-src`).
-
-### 6. Animaciones al scroll (`Reveal`)
-Componente `Reveal.jsx`: usa `IntersectionObserver` para animar (fade + slide up) las secciones cuando entran en pantalla.
-- Aplicado a: Home (Filosofía, Sesiones más pedidas, teaser de Galería, Testimonios, FAQ) y a las cards de Servicios (con `delay` escalonado). En la página `/galeria` la grilla de colecciones aparece sin animación para no retrasar la navegación de fotos.
-- **Accesible:** si el usuario tiene `prefers-reduced-motion: reduce`, la animación se desactiva y el contenido se muestra directo.
-
-> 🎤 **Argumento para la mesa:** "Las animaciones de entrada las hago con `IntersectionObserver` en lugar de librerías: detecto cuándo un elemento entra al viewport y aplico una transición de opacidad y desplazamiento con CSS. Además respeto la preferencia del usuario: con `prefers-reduced-motion` el contenido aparece sin animación."
-
-### 7. Panel Admin en 3 pestañas (Reservas · Servicios · Galería)
-
-El Admin pasa de ser una sola tabla de reservas a un panel con pestañas:
-
-- **Reservas:** KPIs, cobros, borrar y alta manual (todo como estaba).
-- **Servicios:** listado con miniatura, **crear, editar y eliminar** servicios con modal y **subir/cambiar la imagen** de cada uno (FileReader → base64 → preview → `POST /api/servicios/:id/imagen`). Al editar se muestra la imagen actual y se puede **quitar la foto de portada** con el botón "Quitar foto" (con confirmación; `DELETE /api/servicios/:id/imagen`): el servicio vuelve a usar la imagen del diseño.
-- **Acceso rápido (solo dueños):** cuando hay sesión iniciada, la barra de navegación muestra el enlace **"👤 Panel Administrativo"** en un recuadro con borde `#C1121F`. Aparece en todas las páginas públicas (excepto en el panel) y permite volver al panel con un clic, sin usar la flecha del navegador. Se actualiza en cada navegación según el estado de sesión.
-- **Galería:** selector de colección (las 6 fijas + las creadas desde el panel + casilla "colección nueva"), subida **múltiple** de fotos con preview y borrado de cada una (thumbnails desde `GET /api/galeria/:id/imagen`). Al seleccionar una colección se muestran **las fotos del sitio (base), con etiqueta "Base del sitio" y sin botón eliminar** (son parte del diseño y viven en el código), seguidas de **las subidas desde el panel, con botón eliminar**.
-
-> 🎤 **Argumento para la mesa:** "El panel quedó como una mini-CMS: el dueño del estudio gestiona sus reservas, los servicios con su foto y la galería de fotos sin tocar código. Cada acción usa el token JWT del login y el servidor valida todo de nuevo."
-
-### 8. Servicios y galería leídos de la API (con fallback offline)
-
-- `Servicios.jsx`, `Reservar.jsx` y la sección "Sesiones Más Pedidas" del `Home` consultan `GET /api/servicios`. Si el servicio tiene imagen en la base se muestra esa; si no, la PNG local. Las imágenes se sirven con `Cache-Control: public, max-age=60` para que una imagen cambiada desde el panel se vea de inmediato.
-- **Fallback:** si la API no responde (por ejemplo en la demo local sin red, o tras el cold start de Render), se usa el array estático → el sitio nunca queda en blanco.
-
-> 🎤 **Argumento para la mesa:** "El frontend consume la API pero no depende de ella para sobrevivir: hay un fallback con los datos por defecto. Así la demo funciona siempre, pero cuando la API está online los cambios del panel se reflejan al instante."
-
----
-
-## 📱 PWA (Progressive Web App)
-
-El README del TP declaraba los objetivos *"aplicar tecnologías SPA y PWA"*, pero no había PWA. Se completó:
-
-### 1. Manifest (`public/manifest.webmanifest`)
-Nombre, `short_name`, `theme_color` (`#373435`), `background_color` (`#F5F1EC`), `display: standalone`, `lang: es-AR` e **iconos 192x192 y 512x512**. Los iconos se generaron a partir del logo: cuadrado con fondo gris de la marca y el logo centrado (archivos en `public/icons/`).
-
-### 2. Service Worker (`public/sw.js`)
-- **Precache** al instalar: `/`, `/servicios`, `/reservar`, manifest e iconos.
-- Estrategia **network-first con fallback a caché**: sirve siempre lo más fresco posible y, sin conexión, devuelve la copia en caché (para navegaciones, cae a `/`).
-- Solo procesa requests **GET y same-origin** (no toca la API externa).
-- `skipWaiting()` + `clients.claim()` para que la versión nueva tome control de inmediato.
-
-### 3. Registro (`src/main.jsx`)
-```js
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {})
-  })
-}
-```
-Se registra **solo en producción** (`import.meta.env.PROD`) para no interferir en desarrollo.
-
-### 4. Ajustes extra
-- `vercel.json`: la CSP ahora incluye `worker-src 'self'` para permitir el service worker.
-- `index.html`: metas específicas de iOS (`apple-mobile-web-app-*`) y `apple-touch-icon`.
-
-> 🎤 **Argumento para la mesa:** "Una PWA es una web que se puede instalar como app y funciona con conexión limitada. Implementamos el manifest (metadatos + iconos en 192 y 512) y un service worker con estrategia network-first: si estoy online baja siempre lo nuevo, y si me quedo sin red sirve lo que ya cacheó. El registro corre solo en producción con `import.meta.env.PROD`."
-
----
-
-## ✅ Cómo verificarlo
-
-1. **Lint y build del proyecto completo** (pasando en limpio):
-   ```bash
-   npm run lint
-   npm run build
-   ```
-2. **Build:** revisar que `dist/` contenga `manifest.webmanifest`, `sw.js`, `icons/`, `sitemap.xml` y `robots.txt`.
-3. **Deploy:** en HTTPS, abrir DevTools → Application → *Manifest* (debe cargar con iconos válidos) y *Service Workers* (registrado y activo).
-4. **SEO:** ir a las rutas `/`, `/servicios` y `/reservar` y verificar el `<link rel="canonical">` de cada una; validar el JSON-LD en el [Rich Results Test](https://search.google.com/test/rich-results)
-
-## 🧪 Preguntas que te pueden hacer
-
-- **¿Por qué network-first y no cache-first?** Como hay contenido dinámico (fechas, disponibilidad), preferimos servir lo reciente desde la red y usar la caché solo si la red falla.
-- **¿El service worker cachea la API?** No: solo procesa peticiones same-origin para no interferir con el CORS ni con datos sensibles.
-- **¿Por qué canonical propio por página?** Para que Google no considere `/servicios` y `/` como contenido duplicado.
-- **¿Los testimonios son reales?** Son de ejemplo; se reemplazan por opiniones reales de clientes.
-- **¿Las animaciones afectan el rendimiento?** Usan solo `opacity` y `transform` (compositor) y `IntersectionObserver` (no bloquea el hilo principal).
+- **¿Por qué las fotos se guardan en la base y no en Cloudinary/S3?** Porque el TP pide base de
+  datos y así todo queda en un solo lugar. Suficiente para las fotos del panel.
+- **¿Por qué las 60 fotos de la galería NO están en la base?** Es una decisión de diseño: la
+  galería base vive en el código para que se muestre siempre aunque la API tarde. Se probó
+  migrarlas (E12) y se revirtió; en la base quedan solo las fotos extra que se suben desde el panel.
+- **¿El service worker cachea la API?** No: solo peticiones del mismo sitio, para no interferir
+  con CORS ni con datos sensibles.
+- **¿Por qué el precio no viaja desde el navegador?** Porque cualquiera podría cambiarlo con
+  DevTools; lo calcula el servidor desde la tabla de servicios.
