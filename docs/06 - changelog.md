@@ -394,3 +394,8 @@ https://tpf-dw-edsel-irupe.vercel.app/
            miniatura activa con aria-current; bloqueo del scroll de fondo
  75. Grilla de colecciones (landing) y Home sin cambios.
  76. Docs: sección de galería de docs/08 actualizada con el nuevo visor (COMMIT E14)
+
+## COMMIT E15: TIPOGRAFÍA MÁS COMPACTA EN MÓVIL
+ 77. src/index.css: en pantallas hasta 767px la raíz tipográfica pasa de 16px a 14px,
+     lo que achica proporcionalmente todos los textos del sitio en celular
+     (títulos, párrafos, nav, tarjetas) sin tocar el CSS de cada componente
