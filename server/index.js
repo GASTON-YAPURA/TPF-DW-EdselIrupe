@@ -30,7 +30,7 @@ if (!SECRETO || !ADMIN_USER || !ADMIN_PASS) {
   process.exit(1)
 }
 
-app.use(helmet())
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 
 app.use(cors({
   origin: [
