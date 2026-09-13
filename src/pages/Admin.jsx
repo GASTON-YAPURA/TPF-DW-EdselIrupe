@@ -528,7 +528,7 @@ function Admin() {
                 <div className="space-y-3">
                   {servicios.map((s) => (
                     <div key={s.id} className="flex items-center gap-4 border border-[#E5E5E5] rounded-lg p-3 hover:border-[#C1121F] transition-colors">
-                      <div className="w-24 h-16 rounded-md overflow-hidden bg-[#F5F1EC] flex-shrink-0">
+                      <div className="w-24 h-16 rounded-md overflow-hidden bg-[#F5F1EC] shrink-0">
                         {s.tiene_imagen ? (
                           <img src={urlImagenServicio(s.id)} alt={s.titulo} className="w-full h-full object-cover" />
                         ) : (

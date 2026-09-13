@@ -209,7 +209,7 @@ app.use(helmet())
 
 ---
 
-## 8️⃣ 9️⃣ Extras de backend
+## Extras de backend
 
 - **8. Catálogo en BD:** los 5 servicios viven en la tabla `servicios` (seed automático + índice único) y se sirven por `GET /api/servicios`. Los precios se actualizan en un solo lugar.
 - **9. Control de sobrepago:** `PUT /api/reservas/:id/cobro` rechaza montos `<= 0` y valida que `monto <= (total - abonado)`. Antes era posible abonar más que el total.
